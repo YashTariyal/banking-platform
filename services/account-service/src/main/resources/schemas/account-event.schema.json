@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://banking-platform.example.com/schemas/account-event.schema.json",
+  "title": "AccountEvent",
+  "type": "object",
+  "description": "Standard event emitted whenever an account is created or updated.",
+  "properties": {
+    "accountId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "accountNumber": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "customerId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "CHECKING",
+        "SAVINGS",
+        "CREDIT"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "SUSPENDED",
+        "CLOSED"
+      ]
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "balance": {
+      "type": "string",
+      "pattern": "^-?\\d+(\\.\\d{1,4})?$",
+      "description": "String representation to preserve precision."
+    },
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "ACCOUNT_CREATED",
+        "ACCOUNT_UPDATED"
+      ]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "accountId",
+    "accountNumber",
+    "customerId",
+    "type",
+    "status",
+    "currency",
+    "balance",
+    "eventType",
+    "occurredAt"
+  ]
+}
+
