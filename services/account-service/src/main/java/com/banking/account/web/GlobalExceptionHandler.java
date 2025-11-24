@@ -1,6 +1,9 @@
 package com.banking.account.web;
 
 import com.banking.account.service.AccountClosureException;
+import com.banking.account.service.AccountGoalContributionException;
+import com.banking.account.service.AccountGoalNotFoundException;
+import com.banking.account.service.AccountGoalValidationException;
 import com.banking.account.service.AccountLimitException;
 import com.banking.account.service.AccountNotFoundException;
 import com.banking.account.service.ConcurrentAccountUpdateException;
@@ -120,6 +123,36 @@ public class GlobalExceptionHandler {
         ApiError apiError = ApiError.of(
                 HttpStatus.BAD_REQUEST.value(),
                 "Account limit violation",
+                List.of(exception.getMessage())
+        );
+        return ResponseEntity.badRequest().body(apiError);
+    }
+
+    @ExceptionHandler(AccountGoalNotFoundException.class)
+    public ResponseEntity<ApiError> handleGoalNotFound(AccountGoalNotFoundException exception) {
+        ApiError apiError = ApiError.of(
+                HttpStatus.NOT_FOUND.value(),
+                "Goal not found",
+                List.of(exception.getMessage())
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiError);
+    }
+
+    @ExceptionHandler(AccountGoalValidationException.class)
+    public ResponseEntity<ApiError> handleGoalValidation(AccountGoalValidationException exception) {
+        ApiError apiError = ApiError.of(
+                HttpStatus.BAD_REQUEST.value(),
+                "Invalid goal request",
+                List.of(exception.getMessage())
+        );
+        return ResponseEntity.badRequest().body(apiError);
+    }
+
+    @ExceptionHandler(AccountGoalContributionException.class)
+    public ResponseEntity<ApiError> handleGoalContribution(AccountGoalContributionException exception) {
+        ApiError apiError = ApiError.of(
+                HttpStatus.BAD_REQUEST.value(),
+                "Goal contribution failed",
                 List.of(exception.getMessage())
         );
         return ResponseEntity.badRequest().body(apiError);

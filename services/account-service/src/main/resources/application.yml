@@ -60,6 +60,18 @@ account:
     max-transaction-amount: 1000000.00
     max-daily-transactions: 100
     max-daily-transaction-amount: 50000.00
+  goals:
+    min-goal-amount: 10.00
+    max-goal-amount: 1000000.00
+    default-cadence: MONTHLY
+    auto-sweep:
+      enabled: true
+      cron: "0 15 1 * * ?"
+      min-balance-buffer: 50.00
+      default-contribution-amount: 50.00
+      min-contribution-amount: 10.00
+      max-contribution-amount: 1000.00
+      batch-size: 100
   rate-limit:
     enabled: false  # Disabled by default - enable when Redis is configured
     default-requests-per-minute: 60

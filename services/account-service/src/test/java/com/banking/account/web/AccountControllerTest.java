@@ -14,6 +14,8 @@ import com.banking.account.domain.AccountStatus;
 import com.banking.account.domain.AccountTransactionType;
 import com.banking.account.domain.AccountType;
 import com.banking.account.service.AccountService;
+import com.banking.account.config.PiiMaskingFilter;
+import com.banking.account.metrics.AccountMetrics;
 import com.banking.account.web.dto.AccountResponse;
 import com.banking.account.web.dto.AccountTransactionRequest;
 import com.banking.account.web.dto.BalanceResponse;
@@ -35,6 +37,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = AccountController.class)
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class AccountControllerTest {
 
@@ -46,6 +49,12 @@ class AccountControllerTest {
 
     @MockBean
     private AccountService accountService;
+
+    @MockBean
+    private PiiMaskingFilter piiMaskingFilter;
+
+    @MockBean
+    private AccountMetrics accountMetrics;
 
     @Test
     void createAccountReturns201() throws Exception {

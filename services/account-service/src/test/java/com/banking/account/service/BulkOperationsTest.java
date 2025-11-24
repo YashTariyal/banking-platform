@@ -25,11 +25,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BulkOperationsTest {
 
     @Mock
@@ -44,7 +47,6 @@ class BulkOperationsTest {
     private AccountMetrics accountMetrics;
     @Mock
     private CustomerValidationService customerValidationService;
-    @Mock
     private CurrencyValidationService currencyValidationService;
     @Mock
     private AccountLimitsProperties accountLimits;
@@ -60,6 +62,7 @@ class BulkOperationsTest {
         when(accountLimits.getMaxTransactionAmount()).thenReturn(new BigDecimal("1000000.00"));
         when(accountLimits.getMaxDailyTransactions()).thenReturn(100);
         when(accountLimits.getMaxDailyTransactionAmount()).thenReturn(new BigDecimal("50000.00"));
+        currencyValidationService = new CurrencyValidationService();
 
         accountService = new AccountService(
                 accountRepository,
@@ -92,7 +95,6 @@ class BulkOperationsTest {
             account.setUpdatedAt(Instant.now());
             return account;
         });
-
         BulkAccountResponse response = accountService.bulkCreateAccounts(request);
 
         assertThat(response.totalRequested()).isEqualTo(2);

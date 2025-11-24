@@ -1,5 +1,6 @@
 package com.banking.account.metrics;
 
+import com.banking.account.domain.AccountGoalContributionSource;
 import com.banking.account.domain.AccountStatus;
 import com.banking.account.domain.AccountTransactionType;
 import io.micrometer.core.instrument.Counter;
@@ -25,6 +26,11 @@ public class AccountMetrics {
     private final DistributionSummary accountBalances;
     private final Timer transactionProcessingTime;
     private final Counter apiErrors;
+    private final Counter goalsCreated;
+    private final Counter goalsCompleted;
+    private final Counter goalContributionsManual;
+    private final Counter goalContributionsAuto;
+    private final DistributionSummary goalContributionAmounts;
     private final AtomicLong totalAccounts = new AtomicLong(0);
     private final ConcurrentHashMap<AccountStatus, AtomicLong> accountStatusCounts = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
@@ -83,6 +89,26 @@ public class AccountMetrics {
         // API error counter
         apiErrors = Counter.builder("http.server.errors")
                 .description("HTTP server errors by status code")
+                .register(meterRegistry);
+
+        goalsCreated = Counter.builder("accounts.goals.created")
+                .description("Number of savings goals created")
+                .register(meterRegistry);
+        goalsCompleted = Counter.builder("accounts.goals.completed")
+                .description("Number of savings goals completed")
+                .register(meterRegistry);
+        goalContributionsManual = Counter.builder("accounts.goals.contributions")
+                .tag("source", "MANUAL")
+                .description("Manual goal contributions")
+                .register(meterRegistry);
+        goalContributionsAuto = Counter.builder("accounts.goals.contributions")
+                .tag("source", "AUTO")
+                .description("Automated sweep goal contributions")
+                .register(meterRegistry);
+        goalContributionAmounts = DistributionSummary.builder("accounts.goals.contributions.amount")
+                .description("Distribution of goal contribution amounts")
+                .baseUnit("currency")
+                .publishPercentiles(0.5, 0.75, 0.95, 0.99)
                 .register(meterRegistry);
 
         // Total accounts gauge
@@ -175,6 +201,23 @@ public class AccountMetrics {
         }
         if (newStatus != null) {
             accountStatusCounts.get(newStatus).incrementAndGet();
+        }
+    }
+
+    public void incrementGoalCreated() {
+        goalsCreated.increment();
+    }
+
+    public void incrementGoalCompleted() {
+        goalsCompleted.increment();
+    }
+
+    public void recordGoalContribution(BigDecimal amount, AccountGoalContributionSource source) {
+        goalContributionAmounts.record(amount.doubleValue());
+        if (source == com.banking.account.domain.AccountGoalContributionSource.MANUAL) {
+            goalContributionsManual.increment();
+        } else {
+            goalContributionsAuto.increment();
         }
     }
 }
