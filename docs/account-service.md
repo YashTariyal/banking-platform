@@ -34,6 +34,17 @@ The account service manages customer accounts, exposes REST APIs for lifecycle o
 | GET | `/api/accounts/{id}/transactions?page=&size=` | Get transaction history for an account with pagination. |
 | DELETE | `/api/accounts/{id}` | Delete an account. |
 
+### Savings Goals & Auto-Sweep
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/accounts/{id}/goals` | Create a named savings goal with optional auto-sweep configuration (cadence + contribution amount). |
+| GET | `/api/accounts/{id}/goals?page=&size=` | List goals for an account. |
+| GET | `/api/accounts/{id}/goals/{goalId}` | Fetch a specific goal. |
+| PUT | `/api/accounts/{id}/goals/{goalId}` | Update goal details or toggle auto-sweep. |
+| POST | `/api/accounts/{id}/goals/{goalId}/contributions` | Apply a manual contribution. The service debits the account and updates goal progress. |
+
+Auto-sweep runs daily at 01:15 UTC by default. It debits excess balances above the configured buffer (`account.goals.auto-sweep.min-balance-buffer`) and uses deterministic reference IDs so retries remain idempotent. Configure cadence defaults and sweep limits under the `account.goals` section in `application.yml`.
+
 ## Testing
 ```bash
 cd /Users/tariyalji/gitbot/banking-platform/services/account-service
@@ -45,6 +56,7 @@ The suite includes unit tests (service + controller) and repository integration 
 - Micrometer metrics: `accounts.created`, `accounts.updated`, `accounts.transactions.credit`, `accounts.transactions.debit`.
 - Distributed tracing enabled (Micrometer tracing bridge / Zipkin reporter).
 - Request logging via `CommonsRequestLoggingFilter`.
+- Event monitoring: every Kafka publish is captured in the `event_audit_logs` table (direction, status, payload snapshot, partition/offset). The data is written via an AOP interceptor around `KafkaTemplate.send`, so failures and retries are visible without touching producer code.
 
 ## Concurrency & Idempotency
 - Each account row is protected with optimistic locking via a `version` column to prevent lost updates.
