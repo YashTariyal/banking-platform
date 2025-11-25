@@ -72,6 +72,7 @@ account:
       min-contribution-amount: 10.00
       max-contribution-amount: 1000.00
       batch-size: 100
+      max-batches-per-run: 10
   rate-limit:
     enabled: false  # Disabled by default - enable when Redis is configured
     default-requests-per-minute: 60

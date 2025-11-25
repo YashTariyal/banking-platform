@@ -55,6 +55,7 @@ public class AccountGoalProperties {
         private BigDecimal minContributionAmount = new BigDecimal("10.00");
         private BigDecimal maxContributionAmount = new BigDecimal("1000.00");
         private int batchSize = 100;
+        private int maxBatchesPerRun = 10;
 
         public boolean isEnabled() {
             return enabled;
@@ -110,6 +111,14 @@ public class AccountGoalProperties {
 
         public void setBatchSize(int batchSize) {
             this.batchSize = batchSize;
+        }
+
+        public int getMaxBatchesPerRun() {
+            return maxBatchesPerRun;
+        }
+
+        public void setMaxBatchesPerRun(int maxBatchesPerRun) {
+            this.maxBatchesPerRun = maxBatchesPerRun;
         }
     }
 }

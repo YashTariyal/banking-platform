@@ -23,7 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +69,7 @@ public class AccountGoalService {
         BigDecimal normalizedTarget = normalize(request.targetAmount());
         validateGoalAmount(normalizedTarget);
 
+        Instant now = Instant.now();
         AccountGoal goal = new AccountGoal();
         goal.setId(UUID.randomUUID());
         goal.setAccountId(account.getId());
@@ -80,12 +81,15 @@ public class AccountGoalService {
         goal.setStatus(AccountGoalStatus.ACTIVE);
         boolean autoSweepEnabled = Boolean.TRUE.equals(request.autoSweepEnabled());
         goal.setAutoSweepEnabled(autoSweepEnabled);
+        AccountGoalCadence cadence = resolveCadence(request.autoSweepCadence());
         if (autoSweepEnabled) {
             goal.setAutoSweepAmount(determineAutoSweepAmount(request.autoSweepAmount()));
-            goal.setAutoSweepCadence(resolveCadence(request.autoSweepCadence()));
+            goal.setAutoSweepCadence(cadence);
+            goal.setNextSweepAt(cadence.nextExecutionFrom(now));
         } else {
             goal.setAutoSweepAmount(null);
-            goal.setAutoSweepCadence(resolveCadence(request.autoSweepCadence()));
+            goal.setAutoSweepCadence(cadence);
+            goal.setNextSweepAt(null);
         }
 
         AccountGoal persisted = goalRepository.save(goal);
@@ -128,19 +132,32 @@ public class AccountGoalService {
         if (request.dueDate() != null) {
             goal.setDueDate(request.dueDate());
         }
+        boolean autoSweepSettingsChanged = false;
         if (request.autoSweepEnabled() != null) {
             goal.setAutoSweepEnabled(request.autoSweepEnabled());
+            autoSweepSettingsChanged = true;
         }
         if (request.autoSweepAmount() != null) {
             goal.setAutoSweepAmount(determineAutoSweepAmount(request.autoSweepAmount()));
         }
         if (request.autoSweepCadence() != null) {
             goal.setAutoSweepCadence(resolveCadence(request.autoSweepCadence()));
+            autoSweepSettingsChanged = true;
         }
         if (request.status() != null) {
             goal.setStatus(request.status());
             if (request.status() == AccountGoalStatus.CANCELLED) {
                 goal.setAutoSweepEnabled(false);
+                autoSweepSettingsChanged = true;
+            }
+        }
+
+        if (autoSweepSettingsChanged) {
+            if (goal.isAutoSweepEnabled()) {
+                AccountGoalCadence cadence = resolveCadence(goal.getAutoSweepCadence());
+                goal.setNextSweepAt(cadence.nextExecutionFrom(Instant.now()));
+            } else {
+                goal.setNextSweepAt(null);
             }
         }
 
@@ -155,21 +172,22 @@ public class AccountGoalService {
         AccountGoal goal = loadGoal(accountId, goalId);
         ensureGoalIsActive(goal);
         BigDecimal normalizedAmount = normalize(request.amount());
-        UUID referenceId = request.referenceId() != null ? request.referenceId() : UUID.randomUUID();
+        UUID referenceId = Optional.ofNullable(request.referenceId()).orElseGet(UUID::randomUUID);
         return applyContribution(goal, normalizedAmount, referenceId, request.description(), AccountGoalContributionSource.MANUAL, Instant.now());
     }
 
     public void processAutoSweep(UUID goalId, Instant now) {
-        AccountGoal goal = goalRepository.findById(goalId).orElse(null);
-        if (goal == null) {
+        Optional<AccountGoal> optionalGoal = goalRepository.findById(goalId);
+        if (optionalGoal.isEmpty()) {
             return;
         }
+        AccountGoal goal = optionalGoal.get();
         if (!goal.isAutoSweepEnabled() || goal.getStatus() != AccountGoalStatus.ACTIVE) {
             return;
         }
 
         AccountGoalCadence cadence = resolveCadence(goal.getAutoSweepCadence());
-        if (!shouldRunForCadence(goal, cadence, now)) {
+        if (!isDueForSweep(goal, cadence, now)) {
             return;
         }
 
@@ -203,6 +221,7 @@ public class AccountGoalService {
 
         if (goal.getCurrentAmount().compareTo(before) > 0) {
             goal.setLastSweepAt(now);
+            goal.setNextSweepAt(cadence.nextExecutionFrom(now));
             goalRepository.save(goal);
             log.debug("Auto-sweep applied to goal {} for amount {}", goal.getId(), contribution);
         }
@@ -273,15 +292,14 @@ public class AccountGoalService {
         goal.setStatus(AccountGoalStatus.COMPLETED);
         goal.setAutoSweepEnabled(false);
         goal.setCompletedAt(timestamp);
+        goal.setNextSweepAt(null);
     }
 
-    private boolean shouldRunForCadence(AccountGoal goal, AccountGoalCadence cadence, Instant now) {
-        if (goal.getLastSweepAt() == null) {
+    private boolean isDueForSweep(AccountGoal goal, AccountGoalCadence cadence, Instant now) {
+        if (goal.getNextSweepAt() == null) {
             return true;
         }
-        String currentPeriod = cadence.periodKey(now);
-        String lastPeriod = cadence.periodKey(goal.getLastSweepAt());
-        return !Objects.equals(currentPeriod, lastPeriod);
+        return !goal.getNextSweepAt().isAfter(now);
     }
 
     private UUID generateAutoSweepReference(AccountGoal goal, AccountGoalCadence cadence, Instant now) {

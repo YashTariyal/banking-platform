@@ -55,6 +55,9 @@ public class AccountGoal {
     @Column(name = "last_sweep_at")
     private Instant lastSweepAt;
 
+    @Column(name = "next_sweep_at")
+    private Instant nextSweepAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -170,6 +173,14 @@ public class AccountGoal {
 
     public void setLastSweepAt(Instant lastSweepAt) {
         this.lastSweepAt = lastSweepAt;
+    }
+
+    public Instant getNextSweepAt() {
+        return nextSweepAt;
+    }
+
+    public void setNextSweepAt(Instant nextSweepAt) {
+        this.nextSweepAt = nextSweepAt;
     }
 
     public Instant getCreatedAt() {

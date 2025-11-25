@@ -9,6 +9,9 @@ import com.banking.account.config.AccountGoalProperties;
 import com.banking.account.domain.AccountGoal;
 import com.banking.account.domain.AccountGoalStatus;
 import com.banking.account.repository.AccountGoalRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +32,13 @@ class GoalAutoSweepServiceTest {
 
     private GoalAutoSweepService goalAutoSweepService;
     private AccountGoalProperties properties;
+    private Clock clock;
 
     @BeforeEach
     void setUp() {
         properties = new AccountGoalProperties();
-        goalAutoSweepService = new GoalAutoSweepService(goalRepository, accountGoalService, properties);
+        clock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
+        goalAutoSweepService = new GoalAutoSweepService(goalRepository, accountGoalService, properties, clock);
     }
 
     @Test
@@ -43,7 +48,9 @@ class GoalAutoSweepServiceTest {
         goal.setStatus(AccountGoalStatus.ACTIVE);
         goal.setAutoSweepEnabled(true);
         Page<AccountGoal> page = new PageImpl<>(List.of(goal));
-        when(goalRepository.findByAutoSweepEnabledTrueAndStatus(any(), any(Pageable.class))).thenReturn(page);
+        when(goalRepository.findDueGoals(any(), any(), any(Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(Page.empty());
 
         goalAutoSweepService.runAutoSweep();
 
