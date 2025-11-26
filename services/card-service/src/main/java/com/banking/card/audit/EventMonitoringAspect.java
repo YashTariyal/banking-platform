@@ -1,7 +1,5 @@
-package com.banking.account.audit;
+package com.banking.card.audit;
 
-import com.banking.account.messaging.AccountEvent;
-import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -105,7 +103,6 @@ public class EventMonitoringAspect {
                 }
             });
         } else {
-            // Synchronous execution – treat as success immediately
             eventAuditService.markPublishSuccess(auditId, null);
         }
     }
@@ -165,7 +162,6 @@ public class EventMonitoringAspect {
             return ConsumerEventMetadata.invalid();
         }
 
-        // Single record listener
         for (Object arg : args) {
             if (arg instanceof ConsumerRecord<?, ?> record) {
                 String topic = record.topic();
@@ -184,7 +180,6 @@ public class EventMonitoringAspect {
             }
         }
 
-        // Batch listeners (List<ConsumerRecord<..>> etc.) – take first record as representative
         for (Object arg : args) {
             if (arg instanceof Iterable<?> iterable) {
                 ConsumerRecord<?, ?> firstRecord = null;
@@ -216,9 +211,6 @@ public class EventMonitoringAspect {
     }
 
     private String resolveEventType(Object payload) {
-        if (payload instanceof AccountEvent accountEvent) {
-            return accountEvent.eventType();
-        }
         return payload != null ? payload.getClass().getSimpleName() : null;
     }
 
@@ -246,13 +238,14 @@ public class EventMonitoringAspect {
             Long offset,
             boolean valid
     ) {
-        public static ConsumerEventMetadata invalid() {
+        static ConsumerEventMetadata invalid() {
             return new ConsumerEventMetadata(null, null, null, null, null, null, false);
         }
 
-        public boolean valid() {
+        boolean valid() {
             return valid;
         }
     }
 }
+
 

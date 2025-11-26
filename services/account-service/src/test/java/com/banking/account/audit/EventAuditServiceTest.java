@@ -24,6 +24,9 @@ class EventAuditServiceTest {
     @Mock
     private EventAuditLogRepository repository;
 
+    @Mock
+    private EventAuditMetrics metrics;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
@@ -32,7 +35,7 @@ class EventAuditServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        eventAuditService = new EventAuditService(repository, objectMapper);
+        eventAuditService = new EventAuditService(repository, objectMapper, metrics);
     }
 
     @Test

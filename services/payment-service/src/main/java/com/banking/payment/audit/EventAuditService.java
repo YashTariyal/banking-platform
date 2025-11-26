@@ -1,4 +1,4 @@
-package com.banking.account.audit;
+package com.banking.payment.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -135,4 +135,5 @@ public class EventAuditService {
         }
     }
 }
+
 
