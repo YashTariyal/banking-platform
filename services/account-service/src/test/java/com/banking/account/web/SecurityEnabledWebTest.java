@@ -5,8 +5,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
-import com.banking.account.config.PiiMaskingFilter;
 import com.banking.account.config.SecurityConfig;
+import com.banking.account.config.PiiMaskingFilter;
+import com.banking.account.metrics.AccountMetrics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -29,6 +30,9 @@ class SecurityEnabledWebTest {
 
     @MockBean
     private PiiMaskingFilter piiMaskingFilter;
+
+    @MockBean
+    private AccountMetrics accountMetrics;
 
     @Test
     void whenSecurityEnabled_requestsWithoutTokenReturn401() throws Exception {
