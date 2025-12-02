@@ -214,7 +214,7 @@ public class AccountService {
         evictAccountCache(account.getId(), account.getAccountNumber());
     }
 
-    private Account loadAccount(UUID accountId) {
+    Account loadAccount(UUID accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
