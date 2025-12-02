@@ -38,12 +38,12 @@ If server port is `0` (random), read the actual port from the startup logs.
 
 ### 2.1 Authentication & JWT (Optional)
 
-- By default, **authentication is disabled** for local development:
+- By default, **authentication is disabled** for local development (default profile), and **enabled in production** (`prod` profile via `application-prod.yml`):
 
 ```yaml
 account:
   security:
-    enabled: false
+    enabled: false  # default (local/dev)
 ```
 
 - To require **JWT Bearer tokens** on APIs, enable security and configure the resource server:
