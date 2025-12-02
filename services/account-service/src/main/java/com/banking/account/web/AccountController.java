@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,6 +58,7 @@ public class AccountController {
             @ApiResponse(responseCode = "400", description = "Invalid request data"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountResponse createAccount(@Valid @RequestBody CreateAccountRequest request) {
         return accountService.createAccount(request);
     }
@@ -71,6 +73,7 @@ public class AccountController {
                     content = @Content(schema = @Schema(implementation = AccountResponse.class))),
             @ApiResponse(responseCode = "404", description = "Account not found")
     })
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.read')")
     public AccountResponse getAccount(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id) {
@@ -86,6 +89,7 @@ public class AccountController {
             @ApiResponse(responseCode = "200", description = "Accounts retrieved successfully",
                     content = @Content(schema = @Schema(implementation = PageResponse.class)))
     })
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.read')")
     public PageResponse<AccountResponse> listAccounts(
             @Parameter(description = "Filter by customer ID (optional)")
             @RequestParam(required = false) UUID customerId,
@@ -107,6 +111,7 @@ public class AccountController {
             @ApiResponse(responseCode = "404", description = "Account not found"),
             @ApiResponse(responseCode = "400", description = "Invalid status value")
     })
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountResponse updateStatus(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id,
@@ -131,6 +136,7 @@ public class AccountController {
             @ApiResponse(responseCode = "409", description = "Concurrent update conflict")
     })
     @Tag(name = "Transactions")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountResponse applyTransaction(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id,
@@ -149,6 +155,7 @@ public class AccountController {
             @ApiResponse(responseCode = "404", description = "Account not found")
     })
     @Tag(name = "Balance")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.read')")
     public BalanceResponse getBalance(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id) {
@@ -166,6 +173,7 @@ public class AccountController {
             @ApiResponse(responseCode = "404", description = "Account not found")
     })
     @Tag(name = "Transactions")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.read')")
     public PageResponse<TransactionHistoryResponse> getTransactionHistory(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id,
@@ -187,6 +195,7 @@ public class AccountController {
             @ApiResponse(responseCode = "404", description = "Account not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountResponse updateAccount(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id,
@@ -204,6 +213,7 @@ public class AccountController {
             @ApiResponse(responseCode = "204", description = "Account deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Account not found")
     })
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public void deleteAccount(
             @Parameter(description = "Account unique identifier", required = true)
             @PathVariable UUID id) {
@@ -222,6 +232,7 @@ public class AccountController {
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
     @Tag(name = "Bulk Operations")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public BulkAccountResponse bulkCreateAccounts(@Valid @RequestBody BulkCreateAccountRequest request) {
         return accountService.bulkCreateAccounts(request);
     }
@@ -237,6 +248,7 @@ public class AccountController {
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
     @Tag(name = "Bulk Operations")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public BulkAccountResponse bulkUpdateStatus(@Valid @RequestBody BulkUpdateStatusRequest request) {
         return accountService.bulkUpdateStatus(request);
     }
@@ -252,6 +264,7 @@ public class AccountController {
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
     @Tag(name = "Bulk Operations")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public BulkAccountResponse bulkProcessTransactions(@Valid @RequestBody BulkTransactionRequest request) {
         return accountService.bulkProcessTransactions(request);
     }

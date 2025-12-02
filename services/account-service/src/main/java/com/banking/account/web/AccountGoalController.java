@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +42,7 @@ public class AccountGoalController {
     @Operation(summary = "Create savings goal", description = "Creates a new savings goal and optionally enables auto-sweep.")
     @ApiResponse(responseCode = "201", description = "Goal created",
             content = @Content(schema = @Schema(implementation = AccountGoalResponse.class)))
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountGoalResponse createGoal(
             @Parameter(description = "Account identifier", required = true) @PathVariable UUID accountId,
             @Valid @RequestBody CreateAccountGoalRequest request) {
@@ -49,6 +51,7 @@ public class AccountGoalController {
 
     @GetMapping
     @Operation(summary = "List goals", description = "Returns a paginated list of goals for an account.")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.read')")
     public PageResponse<AccountGoalResponse> listGoals(
             @PathVariable UUID accountId,
             @RequestParam(defaultValue = "0") int page,
@@ -58,6 +61,7 @@ public class AccountGoalController {
 
     @GetMapping("/{goalId}")
     @Operation(summary = "Get goal", description = "Fetches a goal by id.")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.read')")
     public AccountGoalResponse getGoal(
             @PathVariable UUID accountId,
             @PathVariable UUID goalId) {
@@ -66,6 +70,7 @@ public class AccountGoalController {
 
     @PutMapping("/{goalId}")
     @Operation(summary = "Update goal", description = "Updates goal details, status, or auto-sweep configuration.")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountGoalResponse updateGoal(
             @PathVariable UUID accountId,
             @PathVariable UUID goalId,
@@ -75,6 +80,7 @@ public class AccountGoalController {
 
     @PostMapping("/{goalId}/contributions")
     @Operation(summary = "Contribute to goal", description = "Records a manual contribution and debits the account balance.")
+    @PreAuthorize("@securityToggle.isDisabled() or hasAuthority('accounts.write')")
     public AccountGoalResponse contribute(
             @PathVariable UUID accountId,
             @PathVariable UUID goalId,
