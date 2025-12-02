@@ -6,6 +6,7 @@ import com.banking.account.domain.AccountTransactionLog;
 import com.banking.account.domain.AccountTransactionType;
 import com.banking.account.domain.AccountType;
 import com.banking.account.metrics.AccountMetrics;
+import com.banking.account.security.TenantAccessEvaluator;
 import com.banking.account.messaging.AccountEventPublisher;
 import com.banking.account.repository.AccountRepository;
 import com.banking.account.repository.AccountTransactionLogRepository;
@@ -56,6 +57,8 @@ public class AccountService {
     private final com.banking.account.config.AccountLimitsProperties accountLimits;
     private final com.banking.account.messaging.TransactionAuditLogger auditLogger;
 
+    private final TenantAccessEvaluator tenantAccessEvaluator;
+
     public AccountService(
             AccountRepository accountRepository,
             AccountTransactionLogRepository transactionLogRepository,
@@ -65,7 +68,8 @@ public class AccountService {
             CustomerValidationService customerValidationService,
             CurrencyValidationService currencyValidationService,
             com.banking.account.config.AccountLimitsProperties accountLimits,
-            com.banking.account.messaging.TransactionAuditLogger auditLogger
+            com.banking.account.messaging.TransactionAuditLogger auditLogger,
+            TenantAccessEvaluator tenantAccessEvaluator
     ) {
         this.accountRepository = accountRepository;
         this.transactionLogRepository = transactionLogRepository;
@@ -76,6 +80,7 @@ public class AccountService {
         this.currencyValidationService = currencyValidationService;
         this.accountLimits = accountLimits;
         this.auditLogger = auditLogger;
+        this.tenantAccessEvaluator = tenantAccessEvaluator;
     }
 
     public AccountResponse createAccount(CreateAccountRequest request) {
@@ -111,7 +116,7 @@ public class AccountService {
     @Transactional(Transactional.TxType.SUPPORTS)
     @org.springframework.cache.annotation.Cacheable(value = com.banking.account.config.CacheConfig.ACCOUNT_CACHE, key = "#accountId")
     public AccountResponse getAccount(UUID accountId) {
-        return AccountMapper.toResponse(loadAccount(accountId));
+        return AccountMapper.toResponse(loadSecuredAccount(accountId));
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
@@ -125,7 +130,7 @@ public class AccountService {
     }
 
     public AccountResponse updateStatus(UUID accountId, UpdateAccountStatusRequest request) {
-        Account account = loadAccount(accountId);
+        Account account = loadSecuredAccount(accountId);
         AccountStatus oldStatus = account.getStatus();
         
         // Validate account closure
@@ -148,7 +153,7 @@ public class AccountService {
         // Validate idempotency key
         validateIdempotencyKey(request.referenceId());
         
-        Account account = loadAccount(accountId);
+        Account account = loadSecuredAccount(accountId);
         validateAccountStatusForTransaction(account);
         return transactionLogRepository.findByAccountIdAndReferenceId(accountId, request.referenceId())
                 .map(log -> AccountMapper.toResponse(loadAccount(accountId)))
@@ -157,13 +162,13 @@ public class AccountService {
 
     @Transactional(Transactional.TxType.SUPPORTS)
     public BalanceResponse getBalance(UUID accountId) {
-        Account account = loadAccount(accountId);
+        Account account = loadSecuredAccount(accountId);
         return AccountMapper.toBalanceResponse(account);
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
     public PageResponse<TransactionHistoryResponse> getTransactionHistory(UUID accountId, int page, int size) {
-        loadAccount(accountId); // Validate account exists
+        loadSecuredAccount(accountId); // Validate account exists and tenant access
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(Math.max(page, 0), safeSize);
         return PageResponse.from(
@@ -173,7 +178,7 @@ public class AccountService {
     }
 
     public AccountResponse updateAccount(UUID accountId, UpdateAccountRequest request) {
-        Account account = loadAccount(accountId);
+        Account account = loadSecuredAccount(accountId);
         
         if (request.type() != null) {
             // Validate account type combination
@@ -195,7 +200,7 @@ public class AccountService {
     }
 
     public void deleteAccount(UUID accountId) {
-        Account account = loadAccount(accountId);
+        Account account = loadSecuredAccount(accountId);
         
         // Validate account can be deleted
         if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
@@ -212,6 +217,12 @@ public class AccountService {
     private Account loadAccount(UUID accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    private Account loadSecuredAccount(UUID accountId) {
+        Account account = loadAccount(accountId);
+        tenantAccessEvaluator.assertCanAccessAccount(account);
+        return account;
     }
 
     private void validateAccountStatusForTransaction(Account account) {

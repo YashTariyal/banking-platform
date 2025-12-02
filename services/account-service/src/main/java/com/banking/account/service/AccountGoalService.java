@@ -33,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.banking.account.security.TenantAccessEvaluator;
 
 @Service
 @Transactional
@@ -47,6 +48,7 @@ public class AccountGoalService {
     private final AccountService accountService;
     private final AccountGoalProperties goalProperties;
     private final AccountMetrics accountMetrics;
+    private final TenantAccessEvaluator tenantAccessEvaluator;
 
     public AccountGoalService(
             AccountGoalRepository goalRepository,
@@ -54,7 +56,8 @@ public class AccountGoalService {
             AccountRepository accountRepository,
             AccountService accountService,
             AccountGoalProperties goalProperties,
-            AccountMetrics accountMetrics
+            AccountMetrics accountMetrics,
+            TenantAccessEvaluator tenantAccessEvaluator
     ) {
         this.goalRepository = goalRepository;
         this.contributionRepository = contributionRepository;
@@ -62,10 +65,11 @@ public class AccountGoalService {
         this.accountService = accountService;
         this.goalProperties = goalProperties;
         this.accountMetrics = accountMetrics;
+        this.tenantAccessEvaluator = tenantAccessEvaluator;
     }
 
     public AccountGoalResponse createGoal(UUID accountId, CreateAccountGoalRequest request) {
-        Account account = loadAccount(accountId);
+        Account account = loadSecuredAccount(accountId);
         BigDecimal normalizedTarget = normalize(request.targetAmount());
         validateGoalAmount(normalizedTarget);
 
@@ -99,7 +103,7 @@ public class AccountGoalService {
 
     @Transactional(readOnly = true)
     public PageResponse<AccountGoalResponse> listGoals(UUID accountId, int page, int size) {
-        loadAccount(accountId);
+        loadSecuredAccount(accountId);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(Math.max(0, page), safeSize);
         Page<AccountGoal> goals = goalRepository.findByAccountId(accountId, pageable);
@@ -191,7 +195,7 @@ public class AccountGoalService {
             return;
         }
 
-        Account account = loadAccount(goal.getAccountId());
+        Account account = loadSecuredAccount(goal.getAccountId());
         BigDecimal available = account.getBalance().subtract(goalProperties.getAutoSweep().getMinBalanceBuffer());
         if (available.compareTo(goalProperties.getAutoSweep().getMinContributionAmount()) < 0) {
             return;
@@ -315,6 +319,12 @@ public class AccountGoalService {
     private Account loadAccount(UUID accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    private Account loadSecuredAccount(UUID accountId) {
+        Account account = loadAccount(accountId);
+        tenantAccessEvaluator.assertCanAccessAccount(account);
+        return account;
     }
 
     private void validateGoalAmount(BigDecimal target) {
