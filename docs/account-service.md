@@ -64,6 +64,11 @@ spring:
           # secret-key: base64-encoded-hmac-key
 ```
 
+- The **account-service acts only as a JWT-protected resource server**:
+  - It does **not** expose login, logout, or token refresh endpoints.
+  - JWTs must be issued by your central identity provider (e.g. `identity-service` in this platform or an external IdP like Okta/Keycloak/Auth0).
+  - Clients call identity-service/IdP to obtain a token, then call account-service with `Authorization: Bearer <token>`.
+
 - When `account.security.enabled=true`:
   - All `/api/**` endpoints require a valid `Authorization: Bearer <token>` header.
   - `/actuator/health`, `/actuator/info`, and Swagger/OpenAPI endpoints remain public.
