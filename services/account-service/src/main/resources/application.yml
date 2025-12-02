@@ -80,6 +80,10 @@ account:
     create-account-requests-per-minute: 10
     transaction-requests-per-minute: 100
     read-requests-per-minute: 200
+  security:
+    enabled: false  # When true, JWT Bearer auth is required for APIs
+
+spring:
 management:
   endpoints:
     web:

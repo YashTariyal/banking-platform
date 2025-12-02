@@ -11,6 +11,7 @@ All Kafka activity (publish + consume) is tracked in an `event_audit_logs` table
   - Maven
   - Local Postgres (database `account_service`, user `account_svc`)
   - Local Kafka on `localhost:9092`
+  - (Optional) An OAuth2 / OIDC provider that can issue JWT access tokens
 
 - **Start infra (if using the provided docker compose):**
 
@@ -32,6 +33,55 @@ All Kafka activity (publish + consume) is tracked in an `event_audit_logs` table
 - Health: `http://localhost:8080/actuator/health`
 
 If server port is `0` (random), read the actual port from the startup logs.
+
+---
+
+### 2.1 Authentication & JWT (Optional)
+
+- By default, **authentication is disabled** for local development:
+
+```yaml
+account:
+  security:
+    enabled: false
+```
+
+- To require **JWT Bearer tokens** on APIs, enable security and configure the resource server:
+
+```yaml
+account:
+  security:
+    enabled: true
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Option 1: Remote JWKS (recommended for OIDC)
+          jwk-set-uri: https://your-idp.example.com/oauth2/default/v1/keys
+          # Option 2: Symmetric secret (HS256) for local testing only
+          # secret-key: base64-encoded-hmac-key
+```
+
+- When `account.security.enabled=true`:
+  - All `/api/**` endpoints require a valid `Authorization: Bearer <token>` header.
+  - `/actuator/health`, `/actuator/info`, and Swagger/OpenAPI endpoints remain public.
+  - The service validates JWTs using Spring Security’s OAuth2 resource server.
+
+#### 2.1.1 Auth Utility API
+
+- **GET** `/api/auth/me`  
+  Returns information from the current JWT (subject, issuer, scopes):
+
+```json
+{
+  "subject": "user-123",
+  "issuer": "https://your-idp.example.com/",
+  "scopes": ["accounts.read", "accounts.write"],
+  "authorities": []
+}
+```
 
 ---
 
