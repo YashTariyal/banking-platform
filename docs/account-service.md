@@ -88,6 +88,13 @@ spring:
 }
 ```
 
+- **Example curl (with JWT)**:
+
+```bash
+curl -X GET "http://localhost:8080/api/auth/me" \
+  -H "Authorization: Bearer <access_token>"
+```
+
 ---
 
 ### 3. Database Schema (PostgreSQL)
@@ -234,6 +241,20 @@ CREATE TABLE event_audit_logs (
   "openedAt": "2025-11-26T10:00:00Z",
   "updatedAt": "2025-11-26T10:00:00Z"
 }
+```
+
+- **Example curl (with JWT when security is enabled)**:
+
+```bash
+curl -X POST "http://localhost:8080/api/accounts" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access_token>" \
+  -d '{
+    "customerId": "11111111-1111-1111-1111-111111111111",
+    "type": "CHECKING",
+    "currency": "USD",
+    "initialDeposit": 250.00
+  }'
 ```
 
 ##### 4.1.2 Get Account
