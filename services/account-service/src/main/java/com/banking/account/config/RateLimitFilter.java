@@ -10,11 +10,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -69,7 +73,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientKey(HttpServletRequest request) {
-        // Use IP address as the key, or API key if available
+        // Prefer JWT subject/client when available to enforce per-user or per-client limits.
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            String subject = Optional.ofNullable(jwt.getSubject()).orElse("anonymous");
+            String clientId = Optional.ofNullable(jwt.getClaimAsString("client_id")).orElse(null);
+            if (clientId != null && !clientId.isBlank()) {
+                return "client:" + clientId + ":sub:" + subject;
+            }
+            return "sub:" + subject;
+        }
+
+        // Fallback: Use IP address as the key, or API key if available
         String apiKey = request.getHeader("X-API-Key");
         if (apiKey != null && !apiKey.isBlank()) {
             return "api-key:" + apiKey;
