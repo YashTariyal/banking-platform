@@ -2,6 +2,7 @@ package com.banking.account.web.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,7 +21,6 @@ public record AccountSummaryResponse(
             String type,
             BigDecimal amount,
             BigDecimal resultingBalance,
-            String description,
             Instant createdAt
     ) {
     }
@@ -31,7 +31,7 @@ public record AccountSummaryResponse(
             BigDecimal currentAmount,
             BigDecimal targetAmount,
             String status,
-            Instant dueDate
+            LocalDate dueDate
     ) {
     }
 }

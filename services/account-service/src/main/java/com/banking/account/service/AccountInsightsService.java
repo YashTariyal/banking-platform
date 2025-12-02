@@ -8,6 +8,7 @@ import com.banking.account.repository.AccountTransactionLogRepository;
 import com.banking.account.web.dto.AccountSummaryResponse;
 import com.banking.account.web.dto.AccountSummaryResponse.GoalSnapshot;
 import com.banking.account.web.dto.AccountSummaryResponse.RecentTransaction;
+import com.banking.account.security.TenantAccessEvaluator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,20 +26,24 @@ public class AccountInsightsService {
     private final AccountService accountService;
     private final AccountTransactionLogRepository transactionLogRepository;
     private final AccountGoalRepository goalRepository;
+    private final TenantAccessEvaluator tenantAccessEvaluator;
 
     public AccountInsightsService(
             AccountService accountService,
             AccountTransactionLogRepository transactionLogRepository,
-            AccountGoalRepository goalRepository
+            AccountGoalRepository goalRepository,
+            TenantAccessEvaluator tenantAccessEvaluator
     ) {
         this.accountService = accountService;
         this.transactionLogRepository = transactionLogRepository;
         this.goalRepository = goalRepository;
+        this.tenantAccessEvaluator = tenantAccessEvaluator;
     }
 
     public AccountSummaryResponse getAccountSummary(UUID accountId) {
-        // Reuse existing tenant and security checks by going through AccountService
-        Account account = accountService.loadSecuredAccountInternal(accountId);
+        // Load account and enforce tenant checks
+        Account account = accountService.loadAccount(accountId);
+        tenantAccessEvaluator.assertCanAccessAccount(account);
 
         List<AccountTransactionLog> recentLogs = transactionLogRepository
                 .findByAccountIdOrderByCreatedAtDesc(accountId, PageRequest.of(0, RECENT_TRANSACTION_LIMIT))
@@ -54,7 +59,6 @@ public class AccountInsightsService {
                         log.getType().name(),
                         log.getAmount(),
                         log.getResultingBalance(),
-                        log.getDescription(),
                         log.getCreatedAt()
                 ))
                 .collect(Collectors.toList());

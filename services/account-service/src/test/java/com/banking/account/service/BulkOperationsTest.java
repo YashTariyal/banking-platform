@@ -52,6 +52,8 @@ class BulkOperationsTest {
     private AccountLimitsProperties accountLimits;
     @Mock
     private TransactionAuditLogger auditLogger;
+    @Mock
+    private com.banking.account.security.TenantAccessEvaluator tenantAccessEvaluator;
 
     private AccountService accountService;
 
@@ -73,7 +75,8 @@ class BulkOperationsTest {
                 customerValidationService,
                 currencyValidationService,
                 accountLimits,
-                auditLogger
+                auditLogger,
+                tenantAccessEvaluator
         );
     }
 

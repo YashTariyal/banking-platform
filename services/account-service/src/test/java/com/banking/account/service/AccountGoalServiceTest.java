@@ -42,6 +42,8 @@ class AccountGoalServiceTest {
     private AccountService accountService;
     @Mock
     private AccountMetrics accountMetrics;
+    @Mock
+    private com.banking.account.security.TenantAccessEvaluator tenantAccessEvaluator;
 
     private AccountGoalService accountGoalService;
 
@@ -54,7 +56,8 @@ class AccountGoalServiceTest {
                 accountRepository,
                 accountService,
                 properties,
-                accountMetrics
+                accountMetrics,
+                tenantAccessEvaluator
         );
     }
 

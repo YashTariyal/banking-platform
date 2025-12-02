@@ -64,6 +64,8 @@ class AccountServiceTest {
     private com.banking.account.config.AccountLimitsProperties accountLimits;
     @Mock
     private com.banking.account.messaging.TransactionAuditLogger auditLogger;
+    @Mock
+    private com.banking.account.security.TenantAccessEvaluator tenantAccessEvaluator;
 
     private AccountService accountService;
 
@@ -85,7 +87,8 @@ class AccountServiceTest {
                 customerValidationService,
                 currencyValidationService,
                 accountLimits,
-                auditLogger
+                auditLogger,
+                tenantAccessEvaluator
         );
     }
 
