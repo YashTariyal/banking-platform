@@ -37,6 +37,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**"
                         ).permitAll()
+                        // Allow refresh-token bootstrap for an already authenticated user
+                        .requestMatchers("/api/auth/refresh-token").authenticated()
+                        // Allow refresh using only the opaque refresh token (no access token required)
+                        .requestMatchers("/api/auth/refresh").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

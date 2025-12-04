@@ -7,6 +7,7 @@ import com.banking.account.config.SecurityConfig;
 import com.banking.account.service.AccountService;
 import com.banking.account.config.PiiMaskingFilter;
 import com.banking.account.metrics.AccountMetrics;
+import com.banking.account.security.RefreshTokenService;
 import com.banking.account.web.dto.AccountResponse;
 import com.banking.account.web.dto.PageResponse;
 import java.util.Collections;
@@ -36,6 +37,9 @@ class SecurityDisabledWebTest {
 
     @MockBean
     private AccountMetrics accountMetrics;
+
+    @MockBean
+    private RefreshTokenService refreshTokenService;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {

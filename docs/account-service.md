@@ -36,7 +36,7 @@ If server port is `0` (random), read the actual port from the startup logs.
 
 ---
 
-### 2.1 Authentication & JWT (Optional)
+### 2.1 Authentication, JWT & Refresh Tokens (Optional)
 
 - By default, **authentication is disabled** for local development (default profile), and **enabled in production** (`prod` profile via `application-prod.yml`):
 
@@ -64,10 +64,13 @@ spring:
           # secret-key: base64-encoded-hmac-key
 ```
 
-- The **account-service acts only as a JWT-protected resource server**:
-  - It does **not** expose login, logout, or token refresh endpoints.
-  - JWTs must be issued by your central identity provider (e.g. `identity-service` in this platform or an external IdP like Okta/Keycloak/Auth0).
-  - Clients call identity-service/IdP to obtain a token, then call account-service with `Authorization: Bearer <token>`.
+- The **account-service primarily acts as a JWT-protected resource server**:
+  - It does **not** handle username/password login – JWTs must still be issued by your central identity provider (e.g. `identity-service` or an external IdP like Okta/Keycloak/Auth0).
+  - Clients call identity-service/IdP to obtain an initial `access_token`, then call account-service with `Authorization: Bearer <token>`.
+  - Additionally, account-service now exposes **demo refresh token helpers** that:
+    - Issue long-lived **opaque refresh tokens** and store them in an in-memory cache.
+    - Allow validating those refresh tokens via a dedicated endpoint.
+    - Do **not** mint new JWTs themselves – in a real deployment, your IdP remains the sole issuer of JWT access and refresh tokens.
 
 - When `account.security.enabled=true`:
   - All `/api/**` endpoints require a valid `Authorization: Bearer <token>` header.
@@ -94,6 +97,83 @@ spring:
 curl -X GET "http://localhost:8080/api/auth/me" \
   -H "Authorization: Bearer <access_token>"
 ```
+
+#### 2.1.2 Demo Refresh Token APIs
+
+These endpoints demonstrate how you can issue and cache opaque refresh tokens on top of JWT-based access tokens.  
+They are **not** a full replacement for a dedicated identity-service; in production, you would typically integrate them with your IdP or move this responsibility entirely into the IdP.
+
+- **Issue refresh token (authenticated)**  
+  **POST** `/api/auth/refresh-token`
+
+  - Requires a valid `Authorization: Bearer <access_token>` header.
+  - Uses the current JWT subject (`sub`) and scopes (`scope` / `scp`) to issue a new opaque refresh token.
+  - Stores the refresh token and its metadata in an in-memory cache (by default, TTL 30 days via `account.security.refresh-token.ttl-seconds`).
+
+  **Response JSON (200)**
+
+  ```json
+  {
+    "refreshToken": "c5b3f0b4-1d0b-4ad0-9f3d-4b7e7a9cd924",
+    "subject": "user-123",
+    "scope": "accounts.read accounts.write",
+    "expiresAt": "2025-12-31T10:00:00Z"
+  }
+  ```
+
+  **Example curl**
+
+  ```bash
+  curl -X POST "http://localhost:8080/api/auth/refresh-token" \
+    -H "Authorization: Bearer <access_token>"
+  ```
+
+- **Validate refresh token (no access token required)**  
+  **POST** `/api/auth/refresh`
+
+  - Accepts an opaque refresh token and validates it against the in-memory cache.
+  - Returns the associated subject and scope if valid; otherwise responds with `400` and an error payload.
+  - This endpoint is intentionally **IdP-agnostic** – it does **not** mint new JWTs; in a real setup, you would typically:
+    - Use this cache to store/validate refresh tokens, and
+    - Delegate actual `access_token` / `refresh_token` issuance to your IdP.
+
+  **Request JSON**
+
+  ```json
+  {
+    "refreshToken": "c5b3f0b4-1d0b-4ad0-9f3d-4b7e7a9cd924"
+  }
+  ```
+
+  **Response JSON (200 – valid refresh token)**
+
+  ```json
+  {
+    "subject": "user-123",
+    "scope": "accounts.read accounts.write",
+    "refreshToken": "c5b3f0b4-1d0b-4ad0-9f3d-4b7e7a9cd924",
+    "expiresAt": "2025-12-31T10:00:00Z"
+  }
+  ```
+
+  **Response JSON (400 – invalid or expired)**
+
+  ```json
+  {
+    "error": "invalid_refresh_token",
+    "error_description": "Refresh token is invalid or expired"
+  }
+  ```
+
+  **Example curl**
+
+  ```bash
+  curl -X POST "http://localhost:8080/api/auth/refresh" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "refreshToken": "c5b3f0b4-1d0b-4ad0-9f3d-4b7e7a9cd924"
+    }'
+  ```
 
 ---
 

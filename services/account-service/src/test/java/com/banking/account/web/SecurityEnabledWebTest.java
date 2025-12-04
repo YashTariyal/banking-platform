@@ -8,6 +8,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import com.banking.account.config.PiiMaskingFilter;
 import com.banking.account.config.SecurityConfig;
 import com.banking.account.metrics.AccountMetrics;
+import com.banking.account.security.RefreshTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -37,6 +38,9 @@ class SecurityEnabledWebTest {
 
     @MockBean
     private JwtDecoder jwtDecoder;
+
+    @MockBean
+    private RefreshTokenService refreshTokenService;
 
     @Test
     void whenSecurityEnabled_requestsWithoutTokenReturn401() throws Exception {
