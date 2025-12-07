@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public interface FraudEventRepository extends JpaRepository<FraudEvent, UUID> {
     Page<FraudEvent> findByCardIdOrderByDetectedAtDesc(UUID cardId, Pageable pageable);
     List<FraudEvent> findByCardIdAndResolvedFalse(UUID cardId);
-    @Query("SELECT COUNT(f) FROM FraudEvent f WHERE f.cardId = :cardId AND f.resolved = false")
+    @Query("SELECT COUNT(f) FROM FraudEvent f WHERE f.card.id = :cardId AND f.resolved = false")
     Long countUnresolvedByCardId(UUID cardId);
 }
 

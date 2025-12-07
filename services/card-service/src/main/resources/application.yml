@@ -1,5 +1,5 @@
 server:
-  port: 0
+  port: 8084
 spring:
   application:
     name: card-service
@@ -30,4 +30,9 @@ management:
         include: health,info,metrics
 card:
   security:
-    enabled: false
+    enabled: false  # When true, JWT Bearer auth is required for APIs
+    refresh-token:
+      ttl-seconds: 2592000  # 30 days default
+    cookie:
+      secure: true  # Set to false for local development without HTTPS
+      same-site: Lax  # Options: Strict, Lax, None
