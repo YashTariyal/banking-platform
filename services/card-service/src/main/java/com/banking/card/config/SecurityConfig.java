@@ -31,6 +31,7 @@ public class SecurityConfig {
         JwtAuthConverter jwtAuthConverter = new JwtAuthConverter();
 
         http.authorizeHttpRequests(auth -> auth
+                        // Public endpoints - no authentication required
                         .requestMatchers(
                                 "/actuator/health",
                                 "/actuator/info",
@@ -39,12 +40,13 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**"
                         ).permitAll()
-                        // Allow refresh-token bootstrap for an already authenticated user
+                        // Auth endpoints - require authentication
                         .requestMatchers("/api/auth/refresh-token").authenticated()
-                        // Allow refresh using only the opaque refresh token (no access token required)
-                        .requestMatchers("/api/auth/refresh").permitAll()
-                        // Allow logout endpoint
-                        .requestMatchers("/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/me").authenticated()
+                        // Allow refresh and logout with refresh token only (no access token required)
+                        .requestMatchers("/api/auth/refresh", "/api/auth/logout").permitAll()
+                        // All other API endpoints require authentication
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
