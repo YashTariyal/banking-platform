@@ -10,9 +10,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -100,7 +102,7 @@ public class AuthController {
         RefreshTokenInfo info = refreshTokenService.issue(jwt.getSubject(), scopeString);
         
         // Set refresh token in HTTP-only cookie
-        setRefreshTokenCookie(response, info.token(), (int) (info.expiresAt().getEpochSecond() - Instant.now().getEpochSecond()));
+        setRefreshTokenCookie(response, info.token(), info.expiresAt());
         
         RefreshTokenResponse responseBody = new RefreshTokenResponse(
                 info.token(), 
@@ -147,16 +149,15 @@ public class AuthController {
         return refreshTokenService.validate(refreshToken)
                 .map(info -> {
                     // Refresh the cookie
-                    setRefreshTokenCookie(httpResponse, info.token(), 
-                            (int) (info.expiresAt().getEpochSecond() - Instant.now().getEpochSecond()));
+                    setRefreshTokenCookie(httpResponse, info.token(), info.expiresAt());
                     
                     // In a real system you would call the IdP here to mint a new JWT using the subject and scope.
-                    return ResponseEntity.ok(Map.of(
-                            "subject", info.subject(),
-                            "scope", info.scope(),
-                            "refreshToken", info.token(),
-                            "expiresAt", info.expiresAt()
-                    ));
+                    Map<String, Object> responseBody = new HashMap<>();
+                    responseBody.put("subject", info.subject());
+                    responseBody.put("scope", info.scope());
+                    responseBody.put("refreshToken", info.token());
+                    responseBody.put("expiresAt", info.expiresAt());
+                    return ResponseEntity.ok(responseBody);
                 })
                 .orElseGet(() -> ResponseEntity.badRequest().body(Map.of(
                         "error", "invalid_refresh_token",
@@ -184,12 +185,29 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
-    private void setRefreshTokenCookie(HttpServletResponse response, String token, int maxAgeSeconds) {
+    private void setRefreshTokenCookie(HttpServletResponse response, String token, Instant expiresAt) {
+        // Calculate maxAge using Duration to preserve sub-second precision
+        // Round up to ensure at least 1 second if there's any time remaining
+        Duration duration = Duration.between(Instant.now(), expiresAt);
+        long maxAgeSeconds = duration.getSeconds();
+        
+        // If there are any nanoseconds remaining or if we're in the same second, add 1 second
+        // This prevents maxAge=0 which would cause the browser to immediately delete the cookie
+        if (duration.getNano() > 0 || maxAgeSeconds == 0) {
+            maxAgeSeconds = Math.max(1, maxAgeSeconds + 1);
+        }
+        
+        // If the token has already expired, set maxAge to 0 to delete the cookie
+        if (maxAgeSeconds <= 0) {
+            clearRefreshTokenCookie(response);
+            return;
+        }
+        
         Cookie cookie = new Cookie("refresh_token", token);
         cookie.setHttpOnly(true);
         cookie.setSecure(cookieSecure);
         cookie.setPath("/");
-        cookie.setMaxAge(maxAgeSeconds);
+        cookie.setMaxAge((int) maxAgeSeconds);
         
         // Set SameSite attribute via Set-Cookie header
         String cookieHeader = String.format("refresh_token=%s; Path=/; HttpOnly; Max-Age=%d; SameSite=%s",
