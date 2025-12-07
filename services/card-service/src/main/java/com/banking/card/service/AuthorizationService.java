@@ -9,6 +9,7 @@ import com.banking.card.domain.MerchantRestriction;
 import com.banking.card.domain.RestrictionAction;
 import com.banking.card.repository.AuthorizationRequestRepository;
 import com.banking.card.repository.CardRepository;
+import com.banking.card.service.CardRestrictionViolationException;
 import com.banking.card.repository.GeographicRestrictionRepository;
 import com.banking.card.repository.MerchantRestrictionRepository;
 import com.banking.card.web.dto.AuthorizationRequestDto;
@@ -88,7 +89,11 @@ public class AuthorizationService {
             for (MerchantRestriction restriction : restrictions) {
                 if (restriction.getMerchantCategoryCode().equals(request.merchantCategoryCode())) {
                     if (restriction.getAction() == RestrictionAction.BLOCK) {
-                        return AuthorizationStatus.DECLINED;
+                        throw new CardRestrictionViolationException(
+                                "Transaction blocked by merchant category restriction",
+                                "MERCHANT_CATEGORY",
+                                request.merchantCategoryCode()
+                        );
                     }
                 }
             }
@@ -100,7 +105,11 @@ public class AuthorizationService {
             for (GeographicRestriction restriction : restrictions) {
                 if (restriction.getCountryCode().equalsIgnoreCase(request.merchantCountry())) {
                     if (restriction.getAction() == RestrictionAction.BLOCK) {
-                        return AuthorizationStatus.DECLINED;
+                        throw new CardRestrictionViolationException(
+                                "Transaction blocked by geographic restriction",
+                                "GEOGRAPHIC",
+                                request.merchantCountry()
+                        );
                     }
                 }
             }

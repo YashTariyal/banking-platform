@@ -2,6 +2,7 @@ package com.banking.card.service;
 
 import com.banking.card.domain.Card;
 import com.banking.card.domain.CardStatus;
+import com.banking.card.events.CardEventPublisher;
 import com.banking.card.repository.CardRepository;
 import com.banking.card.web.CardMapper;
 import com.banking.card.web.dto.CancelCardRequest;
@@ -38,10 +39,12 @@ public class CardService {
 
     private final CardRepository cardRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CardEventPublisher eventPublisher;
 
-    public CardService(CardRepository cardRepository, PasswordEncoder passwordEncoder) {
+    public CardService(CardRepository cardRepository, PasswordEncoder passwordEncoder, CardEventPublisher eventPublisher) {
         this.cardRepository = cardRepository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     public CardResponse issueCard(CreateCardRequest request) {
@@ -82,10 +85,12 @@ public class CardService {
         generateAndSetCvv(card);
 
         Card saved = cardRepository.save(card);
+        eventPublisher.publishCardIssued(saved);
         return CardMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(value = "cards", key = "#id")
     public CardResponse getCard(UUID id) {
         return cardRepository.findById(id)
                 .map(CardMapper::toResponse)
@@ -102,6 +107,7 @@ public class CardService {
         return PageResponse.from(cards.map(CardMapper::toResponse));
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse activateCard(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() == CardStatus.CANCELLED || card.getStatus() == CardStatus.BLOCKED) {
@@ -109,9 +115,12 @@ public class CardService {
         }
         card.setStatus(CardStatus.ACTIVE);
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishCardActivated(saved);
+        return CardMapper.toResponse(saved);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse blockCard(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() == CardStatus.CANCELLED) {
@@ -119,7 +128,9 @@ public class CardService {
         }
         card.setStatus(CardStatus.BLOCKED);
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishCardBlocked(saved);
+        return CardMapper.toResponse(saved);
     }
 
     public CardResponse updateLimit(UUID id, UpdateCardLimitRequest request) {
@@ -128,11 +139,16 @@ public class CardService {
         if (newLimit.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Spending limit must be positive");
         }
+        BigDecimal oldLimit = card.getSpendingLimit();
         card.setSpendingLimit(newLimit);
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishLimitUpdated(saved, "SPENDING_LIMIT", 
+                oldLimit.toString(), newLimit.toString());
+        return CardMapper.toResponse(saved);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse cancelCard(UUID id, CancelCardRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() == CardStatus.CANCELLED) {
@@ -141,10 +157,13 @@ public class CardService {
         card.setStatus(CardStatus.CANCELLED);
         card.setCancellationReason(request.reason());
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishCardCancelled(saved, request.reason());
+        return CardMapper.toResponse(saved);
     }
 
     // Transaction Limits
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse updateTransactionLimits(UUID id, UpdateTransactionLimitsRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         card.setDailyTransactionLimit(request.dailyLimit());
@@ -154,6 +173,7 @@ public class CardService {
     }
 
     // PIN Management
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse setPin(UUID id, SetPinRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() != CardStatus.ACTIVE) {
@@ -171,6 +191,7 @@ public class CardService {
         return CardMapper.toResponse(cardRepository.save(card));
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse changePin(UUID id, ChangePinRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() != CardStatus.ACTIVE) {
@@ -195,7 +216,9 @@ public class CardService {
         card.setPinAttempts(0);
         card.setPinLockedUntil(null);
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishPinChanged(saved);
+        return CardMapper.toResponse(saved);
     }
 
     public CardResponse resetPinAttempts(UUID id) {
@@ -207,6 +230,7 @@ public class CardService {
     }
 
     // Freeze/Unfreeze
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse freezeCard(UUID id, FreezeCardRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() == CardStatus.CANCELLED) {
@@ -220,9 +244,12 @@ public class CardService {
         card.setFrozenAt(Instant.now());
         card.setFrozenReason(request.reason());
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishCardFrozen(saved, request.reason());
+        return CardMapper.toResponse(saved);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse unfreezeCard(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (!Boolean.TRUE.equals(card.getFrozen())) {
@@ -233,7 +260,9 @@ public class CardService {
         card.setFrozenAt(null);
         card.setFrozenReason(null);
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishCardUnfrozen(saved);
+        return CardMapper.toResponse(saved);
     }
 
     // Card Replacement
@@ -280,6 +309,7 @@ public class CardService {
     }
 
     // Account Linking
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse updateAccountLink(UUID id, UpdateAccountLinkRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         card.setAccountId(request.accountId());
@@ -287,6 +317,7 @@ public class CardService {
         return CardMapper.toResponse(cardRepository.save(card));
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse unlinkAccount(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         card.setAccountId(null);
@@ -295,6 +326,7 @@ public class CardService {
     }
 
     // CVV Management
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse rotateCvv(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         if (card.getStatus() != CardStatus.ACTIVE) {
@@ -303,10 +335,13 @@ public class CardService {
         
         generateAndSetCvv(card);
         card.setUpdatedAt(Instant.now());
-        return CardMapper.toResponse(cardRepository.save(card));
+        Card saved = cardRepository.save(card);
+        eventPublisher.publishCvvRotated(saved);
+        return CardMapper.toResponse(saved);
     }
 
     // ATM Withdrawal Limits
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse updateAtmLimits(UUID id, UpdateAtmLimitsRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         card.setDailyAtmLimit(request.dailyLimit());
@@ -364,6 +399,7 @@ public class CardService {
         
         cardRepository.save(oldCard);
         Card saved = cardRepository.save(newCard);
+        eventPublisher.publishCardRenewed(oldCard, saved);
         return CardMapper.toResponse(saved);
     }
 
@@ -417,6 +453,7 @@ public class CardService {
     }
 
     // Contactless Payment Controls
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse enableContactless(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         card.setContactlessEnabled(true);
@@ -424,6 +461,7 @@ public class CardService {
         return CardMapper.toResponse(cardRepository.save(card));
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse disableContactless(UUID id) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         card.setContactlessEnabled(false);

@@ -1,7 +1,9 @@
 package com.banking.card.service;
 
 import com.banking.card.domain.Card;
+import com.banking.card.integration.BalanceServiceClient;
 import com.banking.card.repository.CardRepository;
+import com.banking.card.service.CardNotFoundException;
 import com.banking.card.web.dto.BalanceVerificationRequest;
 import com.banking.card.web.dto.BalanceVerificationResponse;
 import java.math.BigDecimal;
@@ -14,26 +16,31 @@ import org.springframework.transaction.annotation.Transactional;
 public class BalanceVerificationService {
 
     private final CardRepository cardRepository;
+    private final BalanceServiceClient balanceServiceClient;
 
-    public BalanceVerificationService(CardRepository cardRepository) {
+    public BalanceVerificationService(
+            CardRepository cardRepository,
+            BalanceServiceClient balanceServiceClient) {
         this.cardRepository = cardRepository;
+        this.balanceServiceClient = balanceServiceClient;
     }
 
     public BalanceVerificationResponse verifyBalance(UUID cardId, BalanceVerificationRequest request) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new CardNotFoundException(cardId));
 
-        // In a real system, this would call the ledger/account service
-        // For now, we'll use the spending limit as a proxy for available balance
-        // In production, this should integrate with the account service via REST or Kafka
-        BigDecimal availableBalance = card.getSpendingLimit() != null 
-                ? card.getSpendingLimit() 
-                : BigDecimal.ZERO;
+        if (card.getAccountId() == null) {
+            throw new IllegalStateException("Card is not linked to an account");
+        }
 
-        boolean sufficient = availableBalance.compareTo(request.amount()) >= 0;
+        String currency = card.getCurrency();
+        boolean hasSufficientBalance = balanceServiceClient.hasSufficientBalance(
+                card.getAccountId(), request.amount(), currency);
+        BigDecimal availableBalance = balanceServiceClient.getAvailableBalance(
+                card.getAccountId(), currency);
 
         return new BalanceVerificationResponse(
-                sufficient,
+                hasSufficientBalance,
                 availableBalance,
                 request.amount()
         );

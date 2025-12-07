@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.banking.card.domain.Card;
 import com.banking.card.domain.CardStatus;
 import com.banking.card.domain.CardType;
+import com.banking.card.events.CardEventPublisher;
 import com.banking.card.repository.CardRepository;
 import com.banking.card.web.dto.CancelCardRequest;
 import com.banking.card.web.dto.CardResponse;
@@ -39,6 +40,9 @@ class CardServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private CardEventPublisher eventPublisher;
 
     @InjectMocks
     private CardService cardService;
