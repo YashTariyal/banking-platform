@@ -133,6 +133,7 @@ public class CardService {
         return CardMapper.toResponse(saved);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "cards", key = "#id")
     public CardResponse updateLimit(UUID id, UpdateCardLimitRequest request) {
         Card card = cardRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
         BigDecimal newLimit = request.spendingLimit();
@@ -305,6 +306,7 @@ public class CardService {
         
         cardRepository.save(oldCard);
         Card saved = cardRepository.save(newCard);
+        eventPublisher.publishCardReplaced(oldCard, saved, request.reason());
         return CardMapper.toResponse(saved);
     }
 
