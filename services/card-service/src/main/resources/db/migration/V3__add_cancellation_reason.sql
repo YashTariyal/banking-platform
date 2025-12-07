@@ -1,0 +1,2 @@
+ALTER TABLE cards ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255);
+

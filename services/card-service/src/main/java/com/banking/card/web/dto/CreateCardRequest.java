@@ -11,7 +11,10 @@ public record CreateCardRequest(
         @NotNull UUID customerId,
         @NotNull CardType type,
         @Size(min = 3, max = 3) String currency,
-        @NotNull @Positive BigDecimal spendingLimit
+        @NotNull @Positive BigDecimal spendingLimit,
+        UUID accountId,
+        @Size(max = 255, message = "Cardholder name must not exceed 255 characters")
+        String cardholderName
 ) {
 }
 

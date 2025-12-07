@@ -42,7 +42,10 @@ class SecurityDisabledWebTest {
                 "USD",
                 java.math.BigDecimal.TEN,
                 java.time.Instant.now(),
-                java.time.Instant.now()
+                java.time.Instant.now(),
+                null, null, null, false, false, null, false, null, null,
+                java.time.LocalDate.now().plusYears(3), java.time.Instant.now(), null, null, false,
+                null, false, null, null, null, null, null, null, 0, null, true
         );
         com.banking.card.web.dto.PageResponse<com.banking.card.web.dto.CardResponse> page =
                 new com.banking.card.web.dto.PageResponse<>(Collections.singletonList(dummy), 1, 1, 0, 20);

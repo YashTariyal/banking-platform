@@ -59,7 +59,10 @@ class SecurityEnabledWebTest {
                 "USD",
                 BigDecimal.TEN,
                 Instant.now(),
-                Instant.now()
+                Instant.now(),
+                null, null, null, false, false, null, false, null, null,
+                java.time.LocalDate.now().plusYears(3), Instant.now(), null, null, false,
+                null, false, null, null, null, null, null, null, 0, null, true
         );
         PageResponse<CardResponse> page = new PageResponse<>(
                 Collections.singletonList(dummy), 1, 1, 0, 20);
