@@ -88,8 +88,10 @@ public class SecurityConfig {
         
         // If secret-key is provided, use it for symmetric key (HS256)
         if (StringUtils.hasText(secretKey)) {
-            byte[] decodedKey = Base64.getDecoder().decode(secretKey);
-            SecretKey key = new SecretKeySpec(decodedKey, "HmacSHA256");
+            // The secret-key in config is base64 encoded
+            // Decode it to get the UTF-8 bytes of the secret string
+            byte[] keyBytes = Base64.getDecoder().decode(secretKey);
+            SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
             return NimbusJwtDecoder.withSecretKey(key).build();
         }
         
