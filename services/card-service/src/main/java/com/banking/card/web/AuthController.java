@@ -187,20 +187,26 @@ public class AuthController {
 
     private void setRefreshTokenCookie(HttpServletResponse response, String token, Instant expiresAt) {
         // Calculate maxAge using Duration to preserve sub-second precision
-        // Round up to ensure at least 1 second if there's any time remaining
         Duration duration = Duration.between(Instant.now(), expiresAt);
-        long maxAgeSeconds = duration.getSeconds();
         
-        // If there are any nanoseconds remaining or if we're in the same second, add 1 second
-        // This prevents maxAge=0 which would cause the browser to immediately delete the cookie
-        if (duration.getNano() > 0 || maxAgeSeconds == 0) {
-            maxAgeSeconds = Math.max(1, maxAgeSeconds + 1);
-        }
-        
-        // If the token has already expired, set maxAge to 0 to delete the cookie
-        if (maxAgeSeconds <= 0) {
+        // If the token has already expired (negative duration), delete the cookie immediately
+        if (duration.isNegative() || duration.isZero()) {
             clearRefreshTokenCookie(response);
             return;
+        }
+        
+        long maxAgeSeconds = duration.getSeconds();
+        
+        // If there are any nanoseconds remaining, round up to the next second
+        // This prevents maxAge=0 which would cause the browser to immediately delete the cookie
+        // Only do this for positive durations (non-expired tokens)
+        if (duration.getNano() > 0) {
+            maxAgeSeconds = maxAgeSeconds + 1;
+        }
+        
+        // Ensure at least 1 second for non-expired tokens
+        if (maxAgeSeconds <= 0) {
+            maxAgeSeconds = 1;
         }
         
         Cookie cookie = new Cookie("refresh_token", token);
