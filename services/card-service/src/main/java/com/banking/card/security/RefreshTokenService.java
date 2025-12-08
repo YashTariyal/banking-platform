@@ -65,6 +65,14 @@ public class RefreshTokenService {
      */
     @Transactional
     public Optional<RefreshTokenInfo> validate(String token) {
+        return validate(token, null, null);
+    }
+
+    /**
+     * Validates a refresh token with device binding check.
+     */
+    @Transactional
+    public Optional<RefreshTokenInfo> validate(String token, String deviceId, String userAgent) {
         if (!StringUtils.hasText(token)) {
             return Optional.empty();
         }
@@ -82,11 +90,37 @@ public class RefreshTokenService {
                         markExpired(rt);
                         return false;
                     }
+                    if (rt.getDeviceId() != null && deviceId != null && !rt.getDeviceId().equals(deviceId)) {
+                        // Device mismatch -> revoke all tokens for subject
+                        revokeAllForSubject(rt.getSubject(), "device-mismatch");
+                        return false;
+                    }
+                    if (rt.getUserAgent() != null && userAgent != null && !rt.getUserAgent().equals(userAgent)) {
+                        revokeAllForSubject(rt.getSubject(), "device-mismatch");
+                        return false;
+                    }
                     rt.setLastUsedAt(Instant.now());
                     repository.save(rt);
                     return true;
                 })
                 .map(this::toInfo);
+    }
+
+    /**
+     * Rotates a refresh token: revokes the old token and issues a new one preserving subject/scope/device binding.
+     */
+    @Transactional
+    public Optional<RefreshTokenInfo> rotate(String token, String deviceId, String userAgent) {
+        if (!StringUtils.hasText(token)) {
+            return Optional.empty();
+        }
+        String tokenValue = Objects.requireNonNull(token);
+        return repository.findById(tokenValue)
+                .filter(rt -> !rt.isRevoked() && !Instant.now().isAfter(rt.getExpiresAt()))
+                .flatMap(rt -> {
+                    revokeWithReason(rt, "rotated");
+                    return Optional.of(issue(rt.getSubject(), rt.getScope(), deviceId, userAgent));
+                });
     }
 
     /**
@@ -99,17 +133,13 @@ public class RefreshTokenService {
         }
         String tokenValue = Objects.requireNonNull(token);
         repository.findById(tokenValue).ifPresent(rt -> {
-            rt.setRevoked(true);
-            rt.setRevocationReason("revoked");
-            repository.save(rt);
+            revokeWithReason(rt, "revoked");
         });
     }
 
     private void markExpired(RefreshToken token) {
-        token.setRevoked(true);
-        token.setRevocationReason("expired");
+        revokeWithReason(token, "expired");
         token.setLastUsedAt(Instant.now());
-        repository.save(token);
     }
 
     private void handleReuse(RefreshToken token) {
@@ -119,10 +149,14 @@ public class RefreshTokenService {
 
     private void revokeAllForSubject(String subject, String reason) {
         repository.findBySubject(subject).forEach(rt -> {
-            rt.setRevoked(true);
-            rt.setRevocationReason(reason);
-            repository.save(rt);
+            revokeWithReason(rt, reason);
         });
+    }
+
+    private void revokeWithReason(RefreshToken token, String reason) {
+        token.setRevoked(true);
+        token.setRevocationReason(reason);
+        repository.save(token);
     }
 
     private RefreshTokenInfo toInfo(RefreshToken token) {

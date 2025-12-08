@@ -52,3 +52,10 @@ card:
     cookie:
       secure: true  # Set to false for local development without HTTPS
       same-site: Lax  # Options: Strict, Lax, None
+    dev-token:
+      enabled: false  # Enable /api/auth/token for local-only JWT minting
+    jwt:
+      # optional list of symmetric keys with kid support for rotation
+      # keys:
+      #   - kid: dev-v1
+      #     secret: c2VjcmV0LWtleS1mb3ItZGV2ZWxvcG1lbnQtb25seS1kby1ub3QtdXNlLWluLXByb2R1Y3Rpb24=

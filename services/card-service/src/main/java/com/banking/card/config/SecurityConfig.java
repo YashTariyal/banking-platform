@@ -1,7 +1,17 @@
 package com.banking.card.config;
 
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jwt.SignedJWT;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -10,16 +20,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
-
 @Configuration
 @EnableMethodSecurity(jsr250Enabled = true, prePostEnabled = true)
+@EnableConfigurationProperties(JwtKeyProperties.class)
 public class SecurityConfig {
 
     @Value("${card.security.enabled:false}")
@@ -74,7 +82,8 @@ public class SecurityConfig {
     JwtDecoder jwtDecoder(
             @Value("${spring.security.oauth2.resourceserver.jwt.secret-key:}") String secretKey,
             @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}") String jwkSetUri,
-            @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}") String issuerUri) {
+            @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}") String issuerUri,
+            JwtKeyProperties jwtKeyProperties) {
         
         // If jwk-set-uri is provided, use it
         if (StringUtils.hasText(jwkSetUri)) {
@@ -85,11 +94,37 @@ public class SecurityConfig {
         if (StringUtils.hasText(issuerUri)) {
             return NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
         }
-        
+
+        // If multiple symmetric keys provided with kid support, build JWKSet
+        if (jwtKeyProperties.getKeys() != null && !jwtKeyProperties.getKeys().isEmpty()) {
+            List<JWK> jwks = jwtKeyProperties.getKeys().stream()
+                    .filter(k -> StringUtils.hasText(k.getKid()) && StringUtils.hasText(k.getSecret()))
+                    .map(k -> {
+                        byte[] keyBytes = Base64.getDecoder().decode(k.getSecret());
+                        return new OctetSequenceKey.Builder(keyBytes)
+                                .algorithm(com.nimbusds.jose.JWSAlgorithm.HS256)
+                                .keyID(k.getKid())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            if (!jwks.isEmpty()) {
+                Map<String, SecretKey> keyMap = jwks.stream()
+                        .collect(Collectors.toMap(JWK::getKeyID, k -> new SecretKeySpec(k.toOctetSequenceKey().toByteArray(), "HmacSHA256")));
+                SecretKey defaultKey = keyMap.values().iterator().next();
+                return token -> {
+                    String kid = extractKid(token);
+                    SecretKey keyToUse = kid != null && keyMap.containsKey(kid) ? keyMap.get(kid) : defaultKey;
+                    if (keyToUse == null) {
+                        throw new JwtException("No matching key for kid " + kid);
+                    }
+                    return NimbusJwtDecoder.withSecretKey(keyToUse).build().decode(token);
+                };
+            }
+        }
+
         // If secret-key is provided, use it for symmetric key (HS256)
         if (StringUtils.hasText(secretKey)) {
-            // The secret-key in config is base64 encoded
-            // Decode it to get the UTF-8 bytes of the secret string
             byte[] keyBytes = Base64.getDecoder().decode(secretKey);
             SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA256");
             return NimbusJwtDecoder.withSecretKey(key).build();
@@ -102,6 +137,14 @@ public class SecurityConfig {
                 "spring.security.oauth2.resourceserver.jwt.secret-key, " +
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri, or " +
                 "spring.security.oauth2.resourceserver.jwt.issuer-uri");
+    }
+
+    private String extractKid(String token) {
+        try {
+            return SignedJWT.parse(token).getHeader().getKeyID();
+        } catch (Exception e) {
+            throw new JwtException("Unable to parse token header", e);
+        }
     }
 }
 
