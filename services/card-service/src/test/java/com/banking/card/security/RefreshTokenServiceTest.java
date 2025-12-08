@@ -14,7 +14,8 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @Import(RefreshTokenService.class)
 @TestPropertySource(properties = {
-        "card.security.refresh-token.ttl-seconds=3600"
+        "card.security.refresh-token.ttl-seconds=3600",
+        "spring.flyway.enabled=false"
 })
 class RefreshTokenServiceTest {
 
