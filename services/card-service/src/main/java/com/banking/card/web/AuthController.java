@@ -93,13 +93,17 @@ public class AuthController {
     })
     public ResponseEntity<RefreshTokenResponse> issueRefreshToken(
             @AuthenticationPrincipal Jwt jwt,
-            HttpServletResponse response) {
+            HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest request) {
         if (jwt == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         List<String> scopes = extractScopes(jwt);
         String scopeString = String.join(" ", scopes);
-        RefreshTokenInfo info = refreshTokenService.issue(jwt.getSubject(), scopeString);
+        String deviceId = request.getHeader("X-Device-Id");
+        String userAgent = request.getHeader("User-Agent");
+
+        RefreshTokenInfo info = refreshTokenService.issue(jwt.getSubject(), scopeString, deviceId, userAgent);
         
         // Set refresh token in HTTP-only cookie
         setRefreshTokenCookie(response, info.token(), info.expiresAt());

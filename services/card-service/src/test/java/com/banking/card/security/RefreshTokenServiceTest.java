@@ -15,7 +15,8 @@ import org.springframework.test.context.TestPropertySource;
 @Import(RefreshTokenService.class)
 @TestPropertySource(properties = {
         "card.security.refresh-token.ttl-seconds=3600",
-        "spring.flyway.enabled=false"
+        "spring.flyway.enabled=false",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 class RefreshTokenServiceTest {
 
@@ -27,7 +28,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void issuePersistsAndValidates() {
-        RefreshTokenService.RefreshTokenInfo info = refreshTokenService.issue("subject-1", "scope-a scope-b");
+        RefreshTokenService.RefreshTokenInfo info = refreshTokenService.issue("subject-1", "scope-a scope-b", "device-1", "JUnit");
 
         assertThat(refreshTokenRepository.findById(info.token())).isPresent();
         assertThat(info.revoked()).isFalse();
@@ -36,7 +37,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void expiredTokenIsRevokedOnValidation() {
-        RefreshTokenService.RefreshTokenInfo info = refreshTokenService.issue("subject-2", "scope-a");
+        RefreshTokenService.RefreshTokenInfo info = refreshTokenService.issue("subject-2", "scope-a", "device-2", "JUnit");
         RefreshToken token = refreshTokenRepository.findById(info.token()).orElseThrow();
 
         token.setExpiresAt(Instant.now().minusSeconds(10));
@@ -51,7 +52,7 @@ class RefreshTokenServiceTest {
 
     @Test
     void revokedTokenIsRejected() {
-        RefreshTokenService.RefreshTokenInfo info = refreshTokenService.issue("subject-3", "scope-a");
+        RefreshTokenService.RefreshTokenInfo info = refreshTokenService.issue("subject-3", "scope-a", "device-3", "JUnit");
 
         refreshTokenService.revoke(info.token());
 

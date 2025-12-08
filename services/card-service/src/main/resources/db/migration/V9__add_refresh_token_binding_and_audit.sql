@@ -1,0 +1,6 @@
+ALTER TABLE refresh_tokens
+    ADD COLUMN IF NOT EXISTS revocation_reason VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS device_id VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS user_agent VARCHAR(1024),
+    ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ;
+

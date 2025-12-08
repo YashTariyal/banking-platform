@@ -36,7 +36,7 @@ public class RefreshTokenService {
      * Issues a new opaque refresh token for the given subject and scope representation.
      */
     @Transactional
-    public RefreshTokenInfo issue(String subject, String scope) {
+    public RefreshTokenInfo issue(String subject, String scope, String deviceId, String userAgent) {
         if (!StringUtils.hasText(subject)) {
             throw new IllegalArgumentException("subject must not be empty when issuing refresh token");
         }
@@ -52,6 +52,8 @@ public class RefreshTokenService {
         entity.setIssuedAt(now);
         entity.setExpiresAt(expiresAt);
         entity.setRevoked(false);
+        entity.setDeviceId(deviceId);
+        entity.setUserAgent(userAgent);
 
         repository.save(entity);
         return toInfo(entity);
@@ -72,6 +74,7 @@ public class RefreshTokenService {
         return repository.findById(tokenValue)
                 .filter(rt -> {
                     if (rt.isRevoked()) {
+                        handleReuse(rt);
                         return false;
                     }
                     if (Instant.now().isAfter(rt.getExpiresAt())) {
@@ -79,6 +82,8 @@ public class RefreshTokenService {
                         markExpired(rt);
                         return false;
                     }
+                    rt.setLastUsedAt(Instant.now());
+                    repository.save(rt);
                     return true;
                 })
                 .map(this::toInfo);
@@ -95,13 +100,29 @@ public class RefreshTokenService {
         String tokenValue = Objects.requireNonNull(token);
         repository.findById(tokenValue).ifPresent(rt -> {
             rt.setRevoked(true);
+            rt.setRevocationReason("revoked");
             repository.save(rt);
         });
     }
 
     private void markExpired(RefreshToken token) {
         token.setRevoked(true);
+        token.setRevocationReason("expired");
+        token.setLastUsedAt(Instant.now());
         repository.save(token);
+    }
+
+    private void handleReuse(RefreshToken token) {
+        // On reuse of a revoked token, revoke all tokens for the subject as a safety measure.
+        revokeAllForSubject(token.getSubject(), "reuse-detected");
+    }
+
+    private void revokeAllForSubject(String subject, String reason) {
+        repository.findBySubject(subject).forEach(rt -> {
+            rt.setRevoked(true);
+            rt.setRevocationReason(reason);
+            repository.save(rt);
+        });
     }
 
     private RefreshTokenInfo toInfo(RefreshToken token) {
@@ -111,7 +132,11 @@ public class RefreshTokenService {
                 token.getScope(),
                 Objects.requireNonNull(token.getIssuedAt(), "issuedAt"),
                 Objects.requireNonNull(token.getExpiresAt(), "expiresAt"),
-                token.isRevoked()
+                token.isRevoked(),
+                token.getRevocationReason(),
+                token.getDeviceId(),
+                token.getUserAgent(),
+                token.getLastUsedAt()
         );
     }
 
@@ -124,7 +149,11 @@ public class RefreshTokenService {
             String scope,
             @NonNull Instant issuedAt,
             @NonNull Instant expiresAt,
-            boolean revoked
+            boolean revoked,
+            String revocationReason,
+            String deviceId,
+            String userAgent,
+            Instant lastUsedAt
     ) {
     }
 }
