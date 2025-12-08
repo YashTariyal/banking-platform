@@ -16,12 +16,14 @@ import com.banking.card.web.dto.BalanceVerificationResponse;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 
 @ExtendWith(MockitoExtension.class)
 class BalanceVerificationServiceIntegrationTest {
@@ -31,6 +33,9 @@ class BalanceVerificationServiceIntegrationTest {
 
     @Mock
     private BalanceServiceClient balanceServiceClient;
+
+    @Mock
+    private CircuitBreaker externalHttpCircuitBreaker;
 
     @InjectMocks
     private BalanceVerificationService balanceVerificationService;
@@ -61,6 +66,8 @@ class BalanceVerificationServiceIntegrationTest {
                 .thenReturn(true);
         when(balanceServiceClient.getAvailableBalance(eq(accountId), eq("USD")))
                 .thenReturn(BigDecimal.valueOf(5000));
+        when(externalHttpCircuitBreaker.executeSupplier(any()))
+                .thenAnswer(inv -> ((Supplier<?>) inv.getArgument(0)).get());
 
         BalanceVerificationRequest request = new BalanceVerificationRequest(BigDecimal.valueOf(1000));
 
