@@ -62,5 +62,47 @@ class RefreshTokenServiceTest {
                 .extracting(RefreshToken::isRevoked)
                 .isEqualTo(true);
     }
+
+    @Test
+    void rotateReplacesTokenAndRevokesOld() {
+        RefreshTokenService.RefreshTokenInfo issued = refreshTokenService.issue("subject-4", "scope-a", "device-4", "JUnit");
+
+        RefreshTokenService.RefreshTokenInfo rotated = refreshTokenService
+                .rotate(issued.token(), "device-4", "JUnit")
+                .orElseThrow();
+
+        assertThat(rotated.token()).isNotEqualTo(issued.token());
+        assertThat(rotated.deviceId()).isEqualTo("device-4");
+        assertThat(refreshTokenRepository.findById(issued.token()))
+                .get()
+                .extracting(RefreshToken::isRevoked)
+                .isEqualTo(true);
+    }
+
+    @Test
+    void deviceMismatchRevokesAllTokensForSubject() {
+        RefreshTokenService.RefreshTokenInfo t1 = refreshTokenService.issue("subject-5", "scope-a", "device-5a", "JUnit");
+        RefreshTokenService.RefreshTokenInfo t2 = refreshTokenService.issue("subject-5", "scope-a", "device-5a", "JUnit");
+
+        // Validate with mismatching device -> should revoke all
+        assertThat(refreshTokenService.validate(t1.token(), "device-5b", "JUnit")).isEmpty();
+
+        assertThat(refreshTokenRepository.findById(t1.token())).get().extracting(RefreshToken::isRevoked).isEqualTo(true);
+        assertThat(refreshTokenRepository.findById(t2.token())).get().extracting(RefreshToken::isRevoked).isEqualTo(true);
+    }
+
+    @Test
+    void reuseOfRevokedTokenRevokesAllForSubject() {
+        RefreshTokenService.RefreshTokenInfo t1 = refreshTokenService.issue("subject-6", "scope-a", "device-6", "JUnit");
+        RefreshTokenService.RefreshTokenInfo t2 = refreshTokenService.issue("subject-6", "scope-a", "device-6", "JUnit");
+
+        refreshTokenService.revoke(t1.token());
+
+        // Reuse revoked token triggers revocation of all tokens for subject
+        assertThat(refreshTokenService.validate(t1.token(), "device-6", "JUnit")).isEmpty();
+
+        assertThat(refreshTokenRepository.findById(t1.token())).get().extracting(RefreshToken::isRevoked).isEqualTo(true);
+        assertThat(refreshTokenRepository.findById(t2.token())).get().extracting(RefreshToken::isRevoked).isEqualTo(true);
+    }
 }
 
