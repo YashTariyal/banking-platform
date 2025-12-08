@@ -35,6 +35,11 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: db,kafka,jwtHealthIndicator
 springdoc:
   api-docs:
     path: /api-docs
