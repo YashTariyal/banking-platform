@@ -8,6 +8,7 @@ import com.banking.card.repository.CardRepository;
 import com.banking.card.web.dto.CreateNotificationRequest;
 import com.banking.card.web.dto.NotificationResponse;
 import com.banking.card.web.dto.PageResponse;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -21,10 +22,14 @@ public class NotificationService {
 
     private final CardRepository cardRepository;
     private final CardNotificationRepository notificationRepository;
+    private final CircuitBreaker externalHttpCircuitBreaker;
 
-    public NotificationService(CardRepository cardRepository, CardNotificationRepository notificationRepository) {
+    public NotificationService(CardRepository cardRepository,
+                               CardNotificationRepository notificationRepository,
+                               CircuitBreaker externalHttpCircuitBreaker) {
         this.cardRepository = cardRepository;
         this.notificationRepository = notificationRepository;
+        this.externalHttpCircuitBreaker = externalHttpCircuitBreaker;
     }
 
     public NotificationResponse createNotification(UUID cardId, CreateNotificationRequest request) {
@@ -41,10 +46,11 @@ public class NotificationService {
         notification.setStatus(NotificationStatus.PENDING);
         notification.setCreatedAt(Instant.now());
 
-        // In a real system, this would send the notification via Kafka or external service
-        // For now, we'll mark it as sent immediately
-        notification.setStatus(NotificationStatus.SENT);
-        notification.setSentAt(Instant.now());
+        // In a real system, this would send the notification via Kafka or external service.
+        externalHttpCircuitBreaker.executeRunnable(() -> {
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(Instant.now());
+        });
 
         CardNotification saved = notificationRepository.save(notification);
         return toResponse(saved);

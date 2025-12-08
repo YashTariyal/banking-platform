@@ -32,6 +32,10 @@ public class OpenApiConfig {
                                 - Analytics and reporting
                                 
                                 All endpoints require JWT Bearer token authentication.
+                                
+                                Swagger tips:
+                                - Click the green \"Authorize\" button and paste your JWT without the 'Bearer ' prefix.
+                                - For local testing, you can mint a dev token via POST /api/auth/token (set card.security.dev-token.enabled=true).
                                 """)
                         .contact(new Contact()
                                 .name("Banking Platform Team")
@@ -47,7 +51,10 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .description("Enter your JWT token (without 'Bearer' prefix). Generate at jwt.io with secret: secret-key-for-development-only-do-not-use-in-production")))
+                                        .description("""
+                                                Enter your JWT token (without 'Bearer' prefix).
+                                                For local dev you can call POST /api/auth/token to mint a token, or generate at jwt.io using the configured secret.
+                                                """)))
                 .tags(List.of(
                         new Tag().name("Cards").description("Card lifecycle management operations"),
                         new Tag().name("Transactions").description("Card transaction operations"),

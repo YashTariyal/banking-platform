@@ -3,11 +3,11 @@ package com.banking.card.service;
 import com.banking.card.domain.Card;
 import com.banking.card.integration.BalanceServiceClient;
 import com.banking.card.repository.CardRepository;
-import com.banking.card.service.CardNotFoundException;
 import com.banking.card.web.dto.BalanceVerificationRequest;
 import com.banking.card.web.dto.BalanceVerificationResponse;
 import java.math.BigDecimal;
 import java.util.UUID;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,12 +17,15 @@ public class BalanceVerificationService {
 
     private final CardRepository cardRepository;
     private final BalanceServiceClient balanceServiceClient;
+    private final CircuitBreaker externalHttpCircuitBreaker;
 
     public BalanceVerificationService(
             CardRepository cardRepository,
-            BalanceServiceClient balanceServiceClient) {
+            BalanceServiceClient balanceServiceClient,
+            CircuitBreaker externalHttpCircuitBreaker) {
         this.cardRepository = cardRepository;
         this.balanceServiceClient = balanceServiceClient;
+        this.externalHttpCircuitBreaker = externalHttpCircuitBreaker;
     }
 
     public BalanceVerificationResponse verifyBalance(UUID cardId, BalanceVerificationRequest request) {
@@ -34,10 +37,11 @@ public class BalanceVerificationService {
         }
 
         String currency = card.getCurrency();
-        boolean hasSufficientBalance = balanceServiceClient.hasSufficientBalance(
-                card.getAccountId(), request.amount(), currency);
-        BigDecimal availableBalance = balanceServiceClient.getAvailableBalance(
-                card.getAccountId(), currency);
+        boolean hasSufficientBalance = externalHttpCircuitBreaker.executeSupplier(() ->
+                balanceServiceClient.hasSufficientBalance(card.getAccountId(), request.amount(), currency));
+
+        BigDecimal availableBalance = externalHttpCircuitBreaker.executeSupplier(() ->
+                balanceServiceClient.getAvailableBalance(card.getAccountId(), currency));
 
         return new BalanceVerificationResponse(
                 hasSufficientBalance,
