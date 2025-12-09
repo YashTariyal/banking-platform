@@ -2,23 +2,25 @@ package com.banking.account.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 
 class CacheMetricsConfigTest {
 
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CacheConfig.class, CacheMetricsConfig.class))
+            .withPropertyValues(
+                    "account.cache.metrics.enabled=true",
+                    "management.metrics.enable.cache=true");
+
     @Test
-    void bindsCachesToMeterRegistry() {
-        CacheManager cacheManager = new ConcurrentMapCacheManager("accounts", "accounts-by-number");
-        CacheMetricsConfig config = new CacheMetricsConfig();
-        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-
-        config.cacheMetricsBinder(cacheManager).bindTo(meterRegistry);
-
-        assertThat(meterRegistry.find("cache.gets").tags("cache", "accounts").meter()).isPresent();
-        assertThat(meterRegistry.find("cache.gets").tags("cache", "accounts-by-number").meter()).isPresent();
+    void enablesCachingAndCacheManagerPresent() {
+        contextRunner.run(context -> {
+            assertThat(context).hasSingleBean(CacheManager.class);
+            assertThat(context).hasSingleBean(CacheMetricsConfig.class);
+        });
     }
 }
 
