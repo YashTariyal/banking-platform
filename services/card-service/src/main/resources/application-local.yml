@@ -1,0 +1,21 @@
+spring:
+  profiles:
+    active: local
+  cache:
+    type: simple
+card:
+  security:
+    enabled: false
+    cookie:
+      secure: false
+    dev-token:
+      enabled: true
+  cache:
+    metrics:
+      enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+

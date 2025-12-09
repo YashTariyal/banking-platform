@@ -7,11 +7,14 @@ import com.banking.card.domain.FraudEventType;
 import com.banking.card.domain.FraudSeverity;
 import com.banking.card.domain.VelocityTracking;
 import com.banking.card.domain.VelocityWindow;
+import com.banking.card.events.FraudEventPublisher;
 import com.banking.card.repository.CardRepository;
 import com.banking.card.repository.CardTransactionRepository;
 import com.banking.card.repository.FraudEventRepository;
 import com.banking.card.repository.VelocityTrackingRepository;
 import com.banking.card.web.dto.FraudCheckResponse;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -34,23 +37,30 @@ public class FraudDetectionService {
     private final CardTransactionRepository transactionRepository;
     private final FraudEventRepository fraudEventRepository;
     private final VelocityTrackingRepository velocityTrackingRepository;
+    private final FraudEventPublisher fraudEventPublisher;
+    private final MeterRegistry meterRegistry;
+    private final Counter fraudCheckCounter;
 
     public FraudDetectionService(
             CardRepository cardRepository,
             CardTransactionRepository transactionRepository,
             FraudEventRepository fraudEventRepository,
-            VelocityTrackingRepository velocityTrackingRepository) {
+            VelocityTrackingRepository velocityTrackingRepository,
+            FraudEventPublisher fraudEventPublisher,
+            MeterRegistry meterRegistry) {
         this.cardRepository = cardRepository;
         this.transactionRepository = transactionRepository;
         this.fraudEventRepository = fraudEventRepository;
         this.velocityTrackingRepository = velocityTrackingRepository;
+        this.fraudEventPublisher = fraudEventPublisher;
+        this.meterRegistry = meterRegistry;
+        this.fraudCheckCounter = meterRegistry.counter("card.fraud.checks");
     }
 
     public FraudCheckResponse checkForFraud(UUID cardId, BigDecimal amount, String merchantCountry) {
-        if (!cardRepository.existsById(cardId)) {
-            throw new CardNotFoundException(cardId);
-        }
+        Card card = cardRepository.findById(cardId).orElseThrow(() -> new CardNotFoundException(cardId));
 
+        fraudCheckCounter.increment();
         List<String> riskFactors = new ArrayList<>();
         BigDecimal fraudScore = BigDecimal.ZERO;
         FraudSeverity severity = FraudSeverity.LOW;
@@ -109,15 +119,26 @@ public class FraudDetectionService {
             }
         }
 
+        List<FraudEvent> unresolvedEvents = fraudEventRepository.findByCardIdAndResolvedFalse(cardId);
+        if (!unresolvedEvents.isEmpty()) {
+            riskFactors.add("Existing unresolved fraud events");
+            fraudScore = fraudScore.add(new BigDecimal("15"));
+            if (severity.ordinal() < FraudSeverity.HIGH.ordinal()) {
+                severity = FraudSeverity.HIGH;
+            }
+        }
+
         // Update velocity tracking
-        updateVelocityTracking(hourTracking, amount);
-        updateVelocityTracking(dayTracking, amount);
+        updateVelocityTracking(hourTracking, amount, card);
+        updateVelocityTracking(dayTracking, amount, card);
 
         boolean isFraudulent = fraudScore.compareTo(new BigDecimal("50")) >= 0;
 
         if (isFraudulent) {
-            createFraudEvent(cardId, FraudEventType.VELOCITY_EXCEEDED, severity, 
+            createFraudEvent(cardId, FraudEventType.VELOCITY_EXCEEDED, severity,
                     "Fraud detected: " + String.join(", ", riskFactors), fraudScore);
+            meterRegistry.counter("card.fraud.detected", "severity", severity.name()).increment();
+            fraudEventPublisher.publishFraudDetected(cardId, card.getCustomerId(), severity, fraudScore, riskFactors);
         }
 
         return new FraudCheckResponse(isFraudulent, fraudScore, severity, riskFactors);
@@ -140,10 +161,12 @@ public class FraudDetectionService {
                 });
     }
 
-    private void updateVelocityTracking(VelocityTracking tracking, BigDecimal amount) {
+    private void updateVelocityTracking(VelocityTracking tracking, BigDecimal amount, Card card) {
         tracking.setTransactionCount(tracking.getTransactionCount() + 1);
         tracking.setTotalAmount(tracking.getTotalAmount().add(amount));
         velocityTrackingRepository.save(tracking);
+        meterRegistry.counter("card.fraud.velocity.updated", "cardId", card.getId().toString(),
+                "window", tracking.getWindowType().name()).increment();
     }
 
     private BigDecimal calculateAverageTransactionAmount(UUID cardId) {

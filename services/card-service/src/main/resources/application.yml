@@ -35,6 +35,9 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+  metrics:
+    enable:
+      cache: true
   endpoint:
     health:
       group:
@@ -74,3 +77,6 @@ card:
       # keys:
       #   - kid: dev-v1
       #     secret: c2VjcmV0LWtleS1mb3ItZGV2ZWxvcG1lbnQtb25seS1kby1ub3QtdXNlLWluLXByb2R1Y3Rpb24=
+  cache:
+    metrics:
+      enabled: true

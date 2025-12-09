@@ -82,6 +82,9 @@ account:
     read-requests-per-minute: 200
   security:
     enabled: false  # When true, JWT Bearer auth is required for APIs
+  cache:
+    metrics:
+      enabled: true
 management:
   endpoints:
     web:
@@ -96,6 +99,8 @@ management:
     sampling:
       probability: 1.0
   metrics:
+    enable:
+      cache: true
     tags:
       application: ${spring.application.name}
     distribution:

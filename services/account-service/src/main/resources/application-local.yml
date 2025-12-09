@@ -1,0 +1,21 @@
+spring:
+  profiles:
+    active: local
+  cache:
+    type: simple
+  data:
+    redis:
+      host: localhost
+      port: 6379
+account:
+  security:
+    enabled: false
+  cache:
+    metrics:
+      enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+

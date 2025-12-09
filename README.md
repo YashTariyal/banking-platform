@@ -100,6 +100,11 @@ Key config (see `services/card-service/src/main/resources/application.yml`):
 - Health readiness group includes DB, Kafka, and JWT decoder.
 - Metrics via Micrometer; tracing via OTEL bridge + Zipkin reporter (start Zipkin locally to collect traces).
 
+### Deployment, cache, and CI add-ons
+- Cache metrics auto-bound to Micrometer; toggle via `card.cache.metrics.enabled` / `account.cache.metrics.enabled`. Local profile (`application-local.yml`) switches to simple cache and turns security off for quickstarts.
+- Dockerfiles for card/account live under each service directory; Helm charts under `deploy/charts/*` with probes and security toggles.
+- GitHub Actions workflow `.github/workflows/ci.yml` runs build/test, CycloneDX SBOM, OWASP dependency-check, Docker builds, and Helm lint.
+
 ## Account Service quickstart (local)
 ```bash
 cd services/account-service
