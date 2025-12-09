@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -53,7 +52,6 @@ class FraudDetectionServiceTest {
 
     private MeterRegistry meterRegistry;
 
-    @InjectMocks
     private FraudDetectionService fraudDetectionService;
 
     @BeforeEach
@@ -90,9 +88,12 @@ class FraudDetectionServiceTest {
         dayTracking.setTransactionCount(1);
         dayTracking.setTotalAmount(new BigDecimal("100.00"));
 
+        CardTransaction sampleTxn = new CardTransaction();
+        sampleTxn.setAmount(new BigDecimal("50.00"));
+
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
         when(transactionRepository.findByCardIdOrderByTransactionDateDesc(eq(cardId), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(List.of(new CardTransaction())));
+                .thenReturn(new PageImpl<>(List.of(sampleTxn)));
         when(velocityTrackingRepository.findByCardIdAndWindowTypeAndWindowStart(eq(cardId), eq(VelocityWindow.HOUR), any()))
                 .thenReturn(Optional.of(hourTracking));
         when(velocityTrackingRepository.findByCardIdAndWindowTypeAndWindowStart(eq(cardId), eq(VelocityWindow.DAY), any()))
@@ -111,8 +112,8 @@ class FraudDetectionServiceTest {
                 any());
 
         assertThat(meterRegistry.counter("card.fraud.checks").count()).isEqualTo(1.0d);
-        assertThat(meterRegistry.find("card.fraud.detected").tags("severity", "HIGH").counter()).isPresent();
-        assertThat(meterRegistry.find("card.fraud.velocity.updated").tags("cardId", cardId.toString()).counter()).isPresent();
+        assertThat(meterRegistry.find("card.fraud.detected").tags("severity", "HIGH").counter()).isNotNull();
+        assertThat(meterRegistry.find("card.fraud.velocity.updated").tags("cardId", cardId.toString()).counter()).isNotNull();
     }
 }
 
