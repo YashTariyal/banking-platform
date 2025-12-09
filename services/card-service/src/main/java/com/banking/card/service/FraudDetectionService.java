@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -175,15 +176,21 @@ public class FraudDetectionService {
                         org.springframework.data.domain.PageRequest.of(0, 10))
                 .getContent();
         
-        if (recentTransactions.isEmpty()) {
-            return null;
-        }
-        
         BigDecimal total = recentTransactions.stream()
                 .map(CardTransaction::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-        return total.divide(new BigDecimal(recentTransactions.size()), 2, 
+
+        long count = recentTransactions.stream()
+                .map(CardTransaction::getAmount)
+                .filter(Objects::nonNull)
+                .count();
+
+        if (count == 0) {
+            return null;
+        }
+
+        return total.divide(new BigDecimal(count), 2, 
                 java.math.RoundingMode.HALF_UP);
     }
 
