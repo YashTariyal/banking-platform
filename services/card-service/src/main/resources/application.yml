@@ -38,15 +38,14 @@ management:
   metrics:
     enable:
       cache: true
+    export:
+      prometheus:
+        enabled: true
   endpoint:
     health:
       group:
         readiness:
           include: db,kafka,jwtHealthIndicator
-  metrics:
-    export:
-      prometheus:
-        enabled: true
   tracing:
     sampling:
       probability: 1.0
