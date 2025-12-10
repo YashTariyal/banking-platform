@@ -32,6 +32,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [Account Service](docs/account-service.md)
 - [Compliance Service](docs/compliance-service.md)
 - [Customer Service](docs/customer-service.md)
+- [Identity Service](docs/identity-service.md)
 
 ## Building & Running
 ```bash
