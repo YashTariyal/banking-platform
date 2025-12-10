@@ -26,6 +26,26 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 | Compliance | Regulatory reports, AML
 | Support | Back-office cases, manual overrides
 
+## Implemented Services
+
+The following services are fully implemented with domain entities, repositories, services, REST APIs, Kafka integration, comprehensive tests, and documentation:
+
+- ✅ **Account Service** - Account catalog, lifecycle, transactions, goals, and bulk operations
+- ✅ **Compliance Service** - AML monitoring, suspicious activity detection, and regulatory reporting
+- ✅ **Customer Service** - Customer PII, contact information, and preferences management
+- ✅ **Identity Service** - User authentication, session management, and multi-factor authentication
+- ✅ **KYC Service** - Onboarding workflows, document verification, and screening
+
+Each implemented service includes:
+- Domain entities with JPA annotations
+- Flyway database migrations
+- Repository layer with custom queries
+- Service layer with business logic
+- REST controllers with Swagger/OpenAPI documentation
+- Kafka event publishers and consumers
+- Comprehensive test suites
+- Service-specific documentation
+
 Each module currently exposes a minimal Spring Boot bootstrap class, Kafka + datasource configs, and a dedicated Maven `pom.xml`. Extend each service with controllers, entities, repositories, and messaging adapters as requirements evolve.
 
 Service-specific runbooks and API docs live under `docs/`:
@@ -109,6 +129,188 @@ Key config (see `services/card-service/src/main/resources/application.yml`):
 - Cache metrics auto-bound to Micrometer; toggle via `card.cache.metrics.enabled` / `account.cache.metrics.enabled`. Local profile (`application-local.yml`) switches to simple cache and turns security off for quickstarts.
 - Dockerfiles for card/account live under each service directory; Helm charts under `deploy/charts/*` with probes and security toggles.
 - GitHub Actions workflow `.github/workflows/ci.yml` runs build/test, CycloneDX SBOM, OWASP dependency-check, Docker builds, and Helm lint.
+
+## Implemented Services Overview
+
+### Account Service (Port 8081)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- Account creation and lifecycle management (CHECKING, SAVINGS, BROKERAGE)
+- Account transactions (credit/debit) with idempotency
+- Account goals (savings goals with auto-sweep)
+- Bulk operations (create, status update, transactions)
+- Account insights and audit logging
+- Kafka event publishing for account lifecycle events
+
+**Quickstart**:
+```bash
+cd services/account-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/accounts` - Create account
+- `GET /api/accounts/{id}` - Get account
+- `POST /api/accounts/{id}/transactions` - Apply transaction
+- `GET /api/accounts/{id}/balance` - Get balance
+- `POST /api/accounts/{accountId}/goals` - Create savings goal
+
+**Swagger UI**: `http://localhost:8081/swagger-ui.html`
+
+**Database**: `account_service` (PostgreSQL)
+
+**Tests**: Comprehensive unit and integration tests included
+
+---
+
+### Compliance Service (Port 8083)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **AML Transaction Monitoring**: Automatic analysis of transactions from Kafka
+  - Large cash transaction detection (≥ $10,000)
+  - Structuring detection ($9,000-$9,999)
+  - Round number pattern detection
+  - Rapid movement detection
+- **Risk Scoring**: Calculates risk scores (0-100) based on multiple factors
+- **Suspicious Activity Management**: Automatic creation of suspicious activity records
+- **Regulatory Reporting**: Generation and submission of SAR, CTR, LCTR reports
+- **Kafka Integration**: Consumes transaction, payment, and card events
+
+**Quickstart**:
+```bash
+cd services/compliance-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `GET /api/compliance/records` - List compliance records
+- `GET /api/compliance/suspicious-activities` - List suspicious activities
+- `POST /api/compliance/reports/generate` - Generate regulatory report
+- `POST /api/compliance/reports/{id}/submit` - Submit report
+
+**Swagger UI**: `http://localhost:8083/swagger-ui.html`
+
+**Database**: `compliance_service` (PostgreSQL)
+
+**Kafka Topics Consumed**: `transaction-events`, `payment-events`, `card-events`
+
+**Kafka Topics Published**: `compliance-events`
+
+**Tests**: Comprehensive test suite with 20+ tests
+
+---
+
+### Customer Service (Port 8081)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Customer Management**: Create, update, delete customers with PII
+- **Customer Number Generation**: Auto-generates unique customer numbers (CUST + 12 digits)
+- **Contact Information**: Multiple contact methods (email, phone, addresses) with types
+- **Customer Preferences**: Language, timezone, currency, notification settings
+- **KYC Status Management**: Track and update KYC verification status
+- **Kafka Integration**: Publishes customer lifecycle events
+
+**Quickstart**:
+```bash
+cd services/customer-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/customers` - Create customer
+- `GET /api/customers/{id}` - Get customer
+- `PUT /api/customers/{id}` - Update customer
+- `GET /api/customers/{customerId}/contact-info` - Get contact information
+- `PUT /api/customers/{customerId}/preferences` - Update preferences
+
+**Swagger UI**: `http://localhost:8081/swagger-ui.html`
+
+**Database**: `customer_service` (PostgreSQL)
+
+**Kafka Topics Published**: `customer-events` (CUSTOMER_CREATED, CUSTOMER_UPDATED, CUSTOMER_DELETED)
+
+**Tests**: 17 tests covering service and controller layers
+
+---
+
+### Identity Service (Port 8082)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **User Authentication**: Registration, login/logout with JWT tokens
+- **Session Management**: Track active sessions with device info, token refresh
+- **Multi-Factor Authentication**: TOTP and SMS support with backup codes
+- **Account Security**: Account locking after failed attempts, password hashing (BCrypt)
+- **JWT Token Management**: Access tokens (1 hour) and refresh tokens (24 hours)
+- **Kafka Integration**: Publishes user lifecycle events
+
+**Quickstart**:
+```bash
+cd services/identity-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login and get tokens
+- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/logout` - Logout session
+- `GET /api/mfa/{userId}` - Get MFA settings
+- `POST /api/mfa/{userId}/totp` - Enable TOTP MFA
+- `POST /api/mfa/{userId}/sms` - Enable SMS MFA
+
+**Swagger UI**: `http://localhost:8082/swagger-ui.html`
+
+**Database**: `identity_service` (PostgreSQL)
+
+**Kafka Topics Published**: `identity-events` (USER_REGISTERED, USER_LOGGED_IN, USER_LOGGED_OUT, USER_LOCKED)
+
+**Security**: BCrypt password hashing (strength 12), JWT with HMAC-SHA256
+
+**Tests**: 21 tests covering authentication, session, and MFA services
+
+---
+
+### KYC Service (Port 8084)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Automatic Case Creation**: Creates onboarding KYC cases when customers register (via Kafka)
+- **KYC Case Management**: Track cases through workflow (PENDING → DOCUMENT_REVIEW → SCREENING → UNDER_REVIEW → APPROVED/REJECTED)
+- **Document Verification**: Upload and verify documents (passport, driver's license, proof of address, etc.)
+- **Screening**: Sanctions, PEP, adverse media, and watchlist screening
+- **Approval Workflow**: Approve/reject cases with notes and reasons
+- **Risk Level Assignment**: LOW, MEDIUM, HIGH, CRITICAL
+- **Kafka Integration**: Consumes customer events, publishes KYC lifecycle events
+
+**Quickstart**:
+```bash
+cd services/kyc-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/kyc/cases` - Create KYC case
+- `GET /api/kyc/cases/{id}` - Get KYC case
+- `POST /api/kyc/cases/{id}/approve` - Approve case
+- `POST /api/kyc/documents` - Upload document
+- `PUT /api/kyc/documents/{id}/verify` - Verify document
+- `POST /api/kyc/screening` - Perform screening
+
+**Swagger UI**: `http://localhost:8084/swagger-ui.html`
+
+**Database**: `kyc_service` (PostgreSQL)
+
+**Kafka Topics Consumed**: `customer-events` (CUSTOMER_CREATED)
+
+**Kafka Topics Published**: `kyc-events` (KYC_CASE_CREATED, KYC_CASE_UPDATED, KYC_CASE_APPROVED, KYC_CASE_REJECTED)
+
+**Tests**: 11 tests covering KYC case, document, and screening services
+
+---
 
 ## Account Service quickstart (local)
 ```bash
@@ -271,9 +473,88 @@ All endpoints require `Authorization: Bearer <JWT>` unless security toggle is of
 - `velocity_tracking`: counts and amounts per card/time window for fraud checks.
 - `refresh_tokens`: token, subject, scope, issued_at/expires_at, revoked, revocation_reason, device_id, user_agent, last_used_at.
 
+## Service Integration Flow
+
+The implemented services integrate via Kafka events:
+
+1. **Customer Registration Flow**:
+   - Customer Service creates customer → publishes `CUSTOMER_CREATED` event
+   - KYC Service consumes event → automatically creates onboarding KYC case
+   - Identity Service can create user account linked to customer
+
+2. **KYC Approval Flow**:
+   - Documents uploaded and verified in KYC Service
+   - Screening performed (sanctions, PEP)
+   - KYC case approved → publishes `KYC_CASE_APPROVED` event
+   - Customer Service updates customer KYC status to VERIFIED
+
+3. **Transaction Monitoring Flow**:
+   - Account/Transaction/Payment/Card services publish transaction events
+   - Compliance Service consumes events → performs AML analysis
+   - Creates compliance records and suspicious activities for high-risk transactions
+
+4. **Authentication Flow**:
+   - Identity Service handles user registration and authentication
+   - Issues JWT access and refresh tokens
+   - Other services validate JWT tokens for API access
+
+## Service Ports Summary
+
+| Service | Port | Status | Database |
+|---------|------|--------|----------|
+| Account Service | 8081 | ✅ Implemented | `account_service` |
+| Identity Service | 8082 | ✅ Implemented | `identity_service` |
+| Compliance Service | 8083 | ✅ Implemented | `compliance_service` |
+| KYC Service | 8084 | ✅ Implemented | `kyc_service` |
+| Customer Service | 8081 | ✅ Implemented | `customer_service` |
+| Card Service | 8084 | ✅ Implemented | `card_service` |
+
+## Kafka Topics Used
+
+### Topics Published
+- `customer-events` (Customer Service)
+- `identity-events` (Identity Service)
+- `kyc-events` (KYC Service)
+- `compliance-events` (Compliance Service)
+- `account-events` (Account Service)
+- `card-events` (Card Service)
+- `transaction-events` (Transaction Service)
+- `payment-events` (Payment Service)
+
+### Topics Consumed
+- `customer-events` → KYC Service (creates onboarding cases)
+- `transaction-events` → Compliance Service (AML monitoring)
+- `payment-events` → Compliance Service (AML monitoring)
+- `card-events` → Compliance Service (AML monitoring)
+
+## Testing
+
+All implemented services include comprehensive test suites:
+
+- **Account Service**: Unit and integration tests for accounts, transactions, goals
+- **Compliance Service**: 20+ tests for AML analysis, suspicious activities, reports
+- **Customer Service**: 17 tests for customer CRUD, contact info, preferences
+- **Identity Service**: 21 tests for authentication, sessions, MFA
+- **KYC Service**: 11 tests for KYC cases, documents, screening
+
+Run tests for a specific service:
+```bash
+cd services/<service-name>
+mvn test
+```
+
+Run all tests:
+```bash
+mvn test
+```
+
 ## Next Steps
 1. Define shared domain contracts (Avro/JSON schemas) and add them to each service.
 2. Introduce common starter libraries (e.g., `commons-kafka`, `commons-security`).
 3. Implement CI pipelines to build/test all services.
 4. Add cache/data profile tuning, SAST/SBOM, and fraud/analytics streaming enhancements.
+5. Implement remaining services: Ledger, Transaction, Payment, Loan, Risk, Support
+6. Add service-to-service communication patterns (synchronous HTTP, async messaging)
+7. Implement distributed tracing across services
+8. Add API gateway for unified API access
 
