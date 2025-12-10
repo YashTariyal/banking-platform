@@ -28,7 +28,9 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 
 Each module currently exposes a minimal Spring Boot bootstrap class, Kafka + datasource configs, and a dedicated Maven `pom.xml`. Extend each service with controllers, entities, repositories, and messaging adapters as requirements evolve.
 
-Service-specific runbooks and API docs live under `docs/`.
+Service-specific runbooks and API docs live under `docs/`:
+- [Account Service](docs/account-service.md)
+- [Compliance Service](docs/compliance-service.md)
 
 ## Building & Running
 ```bash
