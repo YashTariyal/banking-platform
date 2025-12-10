@@ -31,6 +31,7 @@ Each module currently exposes a minimal Spring Boot bootstrap class, Kafka + dat
 Service-specific runbooks and API docs live under `docs/`:
 - [Account Service](docs/account-service.md)
 - [Compliance Service](docs/compliance-service.md)
+- [Customer Service](docs/customer-service.md)
 
 ## Building & Running
 ```bash
