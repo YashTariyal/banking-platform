@@ -1,0 +1,15 @@
+package com.banking.compliance.domain;
+
+public enum SuspiciousActivityType {
+    LARGE_CASH_TRANSACTION,
+    STRUCTURING,
+    RAPID_MOVEMENT,
+    UNUSUAL_PATTERN,
+    SANCTIONS_MATCH,
+    PEP_MATCH,
+    HIGH_RISK_COUNTRY,
+    MULTIPLE_ACCOUNTS,
+    ROUND_NUMBER_PATTERN,
+    AFTER_HOURS_ACTIVITY
+}
+
