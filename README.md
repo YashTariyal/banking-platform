@@ -38,6 +38,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Ledger Service** - Double-entry journals, ledger accounts, reversals, and balances
 - ✅ **Loan Service** - Loan applications, approvals, schedules, and payments
 - ✅ **Payment Service** - External payment rail integrations (ACH, Wire, SWIFT, etc.)
+- ✅ **Risk Service** - Risk assessment, scoring, and alerting for transactions, accounts, customers, and payments
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -60,6 +61,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [Loan Service](docs/loan-service.md)
 - [KYC Service](docs/kyc-service.md)
 - [Payment Service](docs/payment-service.md)
+- [Risk Service](docs/risk-service.md)
 
 ## Building & Running
 ```bash
@@ -418,6 +420,46 @@ mvn spring-boot:run
 
 **Tests**: 6 tests covering payment service and controller
 
+**Documentation**: [Payment Service](docs/payment-service.md)
+
+---
+
+### Risk Service (Port 8088)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Risk Assessment**: Evaluate risk for transactions, accounts, customers, payments, cards, and loans
+- **Risk Scoring**: Calculate risk scores based on multiple factors (amount, velocity, location, time patterns)
+- **Risk Alerts**: Automatically generate alerts for medium-to-high risk assessments
+- **Alert Management**: Review, resolve, and manage risk alerts
+- **Risk Levels**: LOW, MEDIUM, HIGH, CRITICAL based on risk score thresholds
+- **Kafka Integration**: Publishes risk assessment and alert events
+
+**Quickstart**:
+```bash
+cd services/risk-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/risk/assessments` - Assess risk for an entity
+- `GET /api/risk/assessments/{id}` - Get risk assessment
+- `GET /api/risk/assessments` - List risk assessments (filterable by type, level, customer, account)
+- `GET /api/risk/assessments/entity/{riskType}/{entityId}` - Get assessments by entity
+- `GET /api/risk/alerts/{id}` - Get risk alert
+- `GET /api/risk/alerts` - List risk alerts (filterable by status, level, customer, account)
+- `PUT /api/risk/alerts/{id}/status` - Update alert status
+
+**Swagger UI**: `http://localhost:8088/swagger-ui.html`
+
+**Database**: `risk_service` (PostgreSQL)
+
+**Kafka Topics Published**: `risk-events` (RISK_ASSESSMENT_CREATED, RISK_ALERT_CREATED, RISK_ALERT_UPDATED)
+
+**Tests**: 25 tests (7 scoring, 6 assessment, 6 alert, 6 controller)
+
+**Documentation**: [Risk Service](docs/risk-service.md)
+
 ---
 
 ## Account Service quickstart (local)
@@ -618,6 +660,7 @@ The implemented services integrate via Kafka events:
 | Customer Service | 8081 | ✅ Implemented | `customer_service` |
 | Loan Service | 8086 | ✅ Implemented | `loan_service` |
 | Payment Service | 8087 | ✅ Implemented | `payment_service` |
+| Risk Service | 8088 | ✅ Implemented | `risk_service` |
 | Card Service | 8084 | ✅ Implemented | `card_service` |
 
 ## Kafka Topics Used
@@ -631,6 +674,7 @@ The implemented services integrate via Kafka events:
 - `ledger-events` (Ledger Service)
 - `loan-events` (Loan Service)
 - `payment-events` (Payment Service)
+- `risk-events` (Risk Service)
 - `card-events` (Card Service)
 - `transaction-events` (Transaction Service)
 
