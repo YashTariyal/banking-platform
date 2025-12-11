@@ -36,6 +36,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Identity Service** - User authentication, session management, and multi-factor authentication
 - ✅ **KYC Service** - Onboarding workflows, document verification, and screening
 - ✅ **Ledger Service** - Double-entry journals, ledger accounts, reversals, and balances
+- ✅ **Loan Service** - Loan applications, approvals, schedules, and payments
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -55,6 +56,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [Customer Service](docs/customer-service.md)
 - [Identity Service](docs/identity-service.md)
 - [Ledger Service](docs/ledger-service.md)
+- [Loan Service](docs/loan-service.md)
 - [KYC Service](docs/kyc-service.md)
 
 ## Building & Running
@@ -194,6 +196,39 @@ mvn spring-boot:run
 **Database**: `ledger_service` (PostgreSQL)
 
 **Tests**: Covers journal posting, reversals, validations, and controllers
+
+---
+
+### Loan Service (Port 8086)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- Loan applications with approval/rejection workflow
+- Monthly amortization schedule generation on approval
+- Payment schedule tracking with principal/interest breakdown
+- Apply payments (interest first) and mark installments paid/late
+- Retrieve schedules and payments via REST
+
+**Quickstart**:
+```bash
+cd services/loan-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/loans` - Create loan application
+- `POST /api/loans/{id}/approve` - Approve & generate schedule
+- `POST /api/loans/{id}/reject` - Reject loan
+- `GET /api/loans/{id}` - Get loan
+- `GET /api/loans/{id}/schedule` - List schedule
+- `POST /api/loans/{id}/payments` - Apply payment
+- `GET /api/loans/{id}/payments` - List payments
+
+**Swagger UI**: `http://localhost:8086/swagger-ui.html`
+
+**Database**: `loan_service` (PostgreSQL)
+
+**Tests**: Covers approvals/rejections, payment allocation, and controllers
 
 ---
 
@@ -541,6 +576,7 @@ The implemented services integrate via Kafka events:
 | Compliance Service | 8083 | ✅ Implemented | `compliance_service` |
 | KYC Service | 8084 | ✅ Implemented | `kyc_service` |
 | Customer Service | 8081 | ✅ Implemented | `customer_service` |
+| Loan Service | 8086 | ✅ Implemented | `loan_service` |
 | Card Service | 8084 | ✅ Implemented | `card_service` |
 
 ## Kafka Topics Used
