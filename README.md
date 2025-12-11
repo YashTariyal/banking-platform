@@ -39,6 +39,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Loan Service** - Loan applications, approvals, schedules, and payments
 - ✅ **Payment Service** - External payment rail integrations (ACH, Wire, SWIFT, etc.)
 - ✅ **Risk Service** - Risk assessment, scoring, and alerting for transactions, accounts, customers, and payments
+- ✅ **Support Service** - Back-office case management and manual override capabilities
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -62,6 +63,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [KYC Service](docs/kyc-service.md)
 - [Payment Service](docs/payment-service.md)
 - [Risk Service](docs/risk-service.md)
+- [Support Service](docs/support-service.md)
 
 ## Building & Running
 ```bash
@@ -462,6 +464,52 @@ mvn spring-boot:run
 
 ---
 
+### Support Service (Port 8089)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Support Case Management**: Create, assign, track, and resolve customer support cases
+- **Case Workflow**: Manage cases through lifecycle (OPEN → ASSIGNED → IN_PROGRESS → RESOLVED/CLOSED)
+- **Manual Overrides**: Request, approve, and manage manual overrides for account limits, transaction approvals, fee waivers, etc.
+- **Override Workflow**: PENDING → APPROVED/REJECTED workflow with expiration support
+- **Case Types**: Support for account inquiries, transaction disputes, fraud reports, fee disputes, etc.
+- **Case Priorities**: LOW, MEDIUM, HIGH, URGENT
+- **Kafka Integration**: Publishes case and override lifecycle events
+
+**Quickstart**:
+```bash
+cd services/support-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/support/cases` - Create support case
+- `GET /api/support/cases/{id}` - Get support case
+- `GET /api/support/cases/number/{caseNumber}` - Get case by number
+- `GET /api/support/cases` - List cases (filterable by status, priority, type, customer, assignedTo)
+- `PUT /api/support/cases/{id}/assign` - Assign case
+- `PUT /api/support/cases/{id}/status` - Update case status
+- `PUT /api/support/cases/{id}/resolve` - Resolve case
+- `POST /api/support/overrides` - Create manual override
+- `GET /api/support/overrides/{id}` - Get override
+- `GET /api/support/overrides` - List overrides (filterable by status, type, customer, account)
+- `GET /api/support/overrides/active/{customerId}/{overrideType}` - Get active overrides
+- `PUT /api/support/overrides/{id}/approve` - Approve override
+- `PUT /api/support/overrides/{id}/reject` - Reject override
+- `PUT /api/support/overrides/{id}/revoke` - Revoke override
+
+**Swagger UI**: `http://localhost:8089/swagger-ui.html`
+
+**Database**: `support_service` (PostgreSQL)
+
+**Kafka Topics Published**: `support-events` (SUPPORT_CASE_CREATED, SUPPORT_CASE_UPDATED, SUPPORT_CASE_RESOLVED, MANUAL_OVERRIDE_CREATED, MANUAL_OVERRIDE_APPROVED, MANUAL_OVERRIDE_REJECTED, MANUAL_OVERRIDE_REVOKED)
+
+**Tests**: 21 tests (2 case number generator, 6 case service, 7 override service, 6 controller)
+
+**Documentation**: [Support Service](docs/support-service.md)
+
+---
+
 ## Account Service quickstart (local)
 ```bash
 cd services/account-service
@@ -661,6 +709,7 @@ The implemented services integrate via Kafka events:
 | Loan Service | 8086 | ✅ Implemented | `loan_service` |
 | Payment Service | 8087 | ✅ Implemented | `payment_service` |
 | Risk Service | 8088 | ✅ Implemented | `risk_service` |
+| Support Service | 8089 | ✅ Implemented | `support_service` |
 | Card Service | 8084 | ✅ Implemented | `card_service` |
 
 ## Kafka Topics Used
@@ -675,6 +724,7 @@ The implemented services integrate via Kafka events:
 - `loan-events` (Loan Service)
 - `payment-events` (Payment Service)
 - `risk-events` (Risk Service)
+- `support-events` (Support Service)
 - `card-events` (Card Service)
 - `transaction-events` (Transaction Service)
 
