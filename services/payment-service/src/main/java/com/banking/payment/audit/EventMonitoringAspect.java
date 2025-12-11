@@ -242,7 +242,7 @@ public class EventMonitoringAspect {
             return new ConsumerEventMetadata(null, null, null, null, null, null, false);
         }
 
-        boolean valid() {
+        public boolean valid() {
             return valid;
         }
     }

@@ -37,6 +37,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **KYC Service** - Onboarding workflows, document verification, and screening
 - ✅ **Ledger Service** - Double-entry journals, ledger accounts, reversals, and balances
 - ✅ **Loan Service** - Loan applications, approvals, schedules, and payments
+- ✅ **Payment Service** - External payment rail integrations (ACH, Wire, SWIFT, etc.)
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -58,6 +59,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [Ledger Service](docs/ledger-service.md)
 - [Loan Service](docs/loan-service.md)
 - [KYC Service](docs/kyc-service.md)
+- [Payment Service](docs/payment-service.md)
 
 ## Building & Running
 ```bash
@@ -380,6 +382,44 @@ mvn spring-boot:run
 
 ---
 
+### Payment Service (Port 8087)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Payment Rails**: Support for ACH, Wire, SWIFT, FedWire, RTP, and Card Network
+- **Payment Lifecycle**: PENDING → PROCESSING → COMPLETED/FAILED workflow
+- **Payment Directions**: INBOUND and OUTBOUND payments
+- **External Account Support**: Payments to external accounts with routing information
+- **Idempotency**: Payments identified by unique reference ID
+- **Payment Cancellation**: Cancel pending payments
+- **Kafka Integration**: Publishes payment lifecycle events
+
+**Quickstart**:
+```bash
+cd services/payment-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/payments` - Create payment
+- `GET /api/payments/{id}` - Get payment
+- `GET /api/payments/reference/{referenceId}` - Get payment by reference ID
+- `GET /api/payments/account/{accountId}` - Get payments by account
+- `PUT /api/payments/{id}/process` - Process payment
+- `PUT /api/payments/{id}/complete` - Complete payment
+- `PUT /api/payments/{id}/fail` - Fail payment
+- `PUT /api/payments/{id}/cancel` - Cancel payment
+
+**Swagger UI**: `http://localhost:8087/swagger-ui.html`
+
+**Database**: `payment_service` (PostgreSQL)
+
+**Kafka Topics Published**: `payment-events` (PAYMENT_INITIATED, PAYMENT_PROCESSING, PAYMENT_COMPLETED, PAYMENT_FAILED, PAYMENT_CANCELLED)
+
+**Tests**: 6 tests covering payment service and controller
+
+---
+
 ## Account Service quickstart (local)
 ```bash
 cd services/account-service
@@ -577,6 +617,7 @@ The implemented services integrate via Kafka events:
 | KYC Service | 8084 | ✅ Implemented | `kyc_service` |
 | Customer Service | 8081 | ✅ Implemented | `customer_service` |
 | Loan Service | 8086 | ✅ Implemented | `loan_service` |
+| Payment Service | 8087 | ✅ Implemented | `payment_service` |
 | Card Service | 8084 | ✅ Implemented | `card_service` |
 
 ## Kafka Topics Used
@@ -587,9 +628,11 @@ The implemented services integrate via Kafka events:
 - `kyc-events` (KYC Service)
 - `compliance-events` (Compliance Service)
 - `account-events` (Account Service)
+- `ledger-events` (Ledger Service)
+- `loan-events` (Loan Service)
+- `payment-events` (Payment Service)
 - `card-events` (Card Service)
 - `transaction-events` (Transaction Service)
-- `payment-events` (Payment Service)
 
 ### Topics Consumed
 - `customer-events` → KYC Service (creates onboarding cases)
