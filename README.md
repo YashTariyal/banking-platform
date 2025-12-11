@@ -40,6 +40,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Payment Service** - External payment rail integrations (ACH, Wire, SWIFT, etc.)
 - ✅ **Risk Service** - Risk assessment, scoring, and alerting for transactions, accounts, customers, and payments
 - ✅ **Support Service** - Back-office case management and manual override capabilities
+- ✅ **Transaction Service** - Transaction orchestration and lifecycle management for banking operations
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -64,6 +65,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [Payment Service](docs/payment-service.md)
 - [Risk Service](docs/risk-service.md)
 - [Support Service](docs/support-service.md)
+- [Transaction Service](docs/transaction-service.md)
 
 ## Building & Running
 ```bash
@@ -510,6 +512,47 @@ mvn spring-boot:run
 
 ---
 
+### Transaction Service (Port 8090)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Transaction Orchestration**: Create and manage transactions with idempotency support
+- **Transaction Lifecycle**: PENDING → PROCESSING → COMPLETED/FAILED workflow
+- **Transaction Types**: Support for deposits, withdrawals, transfers, payments, fees, interest, refunds, reversals, and adjustments
+- **Transaction Reversal**: Reverse completed transactions
+- **Transaction Cancellation**: Cancel pending transactions
+- **Idempotency**: Prevent duplicate transactions via reference ID
+- **Kafka Integration**: Publishes transaction lifecycle events for other services
+
+**Quickstart**:
+```bash
+cd services/transaction-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/transactions` - Create transaction
+- `GET /api/transactions/{id}` - Get transaction
+- `GET /api/transactions/reference/{referenceId}` - Get transaction by reference ID
+- `GET /api/transactions` - List transactions (filterable by status, type, customer, account)
+- `PUT /api/transactions/{id}/process` - Process transaction
+- `PUT /api/transactions/{id}/complete` - Complete transaction
+- `PUT /api/transactions/{id}/fail` - Fail transaction
+- `PUT /api/transactions/{id}/cancel` - Cancel transaction
+- `PUT /api/transactions/{id}/reverse` - Reverse transaction
+
+**Swagger UI**: `http://localhost:8090/swagger-ui.html`
+
+**Database**: `transaction_service` (PostgreSQL)
+
+**Kafka Topics Published**: `transaction-events` (TRANSACTION_INITIATED, TRANSACTION_PROCESSING, TRANSACTION_COMPLETED, TRANSACTION_FAILED, TRANSACTION_CANCELLED, TRANSACTION_REVERSED)
+
+**Tests**: 11 tests (7 service, 4 controller)
+
+**Documentation**: [Transaction Service](docs/transaction-service.md)
+
+---
+
 ## Account Service quickstart (local)
 ```bash
 cd services/account-service
@@ -710,6 +753,7 @@ The implemented services integrate via Kafka events:
 | Payment Service | 8087 | ✅ Implemented | `payment_service` |
 | Risk Service | 8088 | ✅ Implemented | `risk_service` |
 | Support Service | 8089 | ✅ Implemented | `support_service` |
+| Transaction Service | 8090 | ✅ Implemented | `transaction_service` |
 | Card Service | 8084 | ✅ Implemented | `card_service` |
 
 ## Kafka Topics Used
@@ -725,8 +769,8 @@ The implemented services integrate via Kafka events:
 - `payment-events` (Payment Service)
 - `risk-events` (Risk Service)
 - `support-events` (Support Service)
-- `card-events` (Card Service)
 - `transaction-events` (Transaction Service)
+- `card-events` (Card Service)
 
 ### Topics Consumed
 - `customer-events` → KYC Service (creates onboarding cases)
