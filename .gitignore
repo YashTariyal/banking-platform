@@ -13,6 +13,7 @@
 *.zip
 *.tar.gz
 *.rar
+*.m2
 
 # Maven
 target/

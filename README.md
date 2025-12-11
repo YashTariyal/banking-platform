@@ -35,6 +35,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Customer Service** - Customer PII, contact information, and preferences management
 - ✅ **Identity Service** - User authentication, session management, and multi-factor authentication
 - ✅ **KYC Service** - Onboarding workflows, document verification, and screening
+- ✅ **Ledger Service** - Double-entry journals, ledger accounts, reversals, and balances
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -53,6 +54,7 @@ Service-specific runbooks and API docs live under `docs/`:
 - [Compliance Service](docs/compliance-service.md)
 - [Customer Service](docs/customer-service.md)
 - [Identity Service](docs/identity-service.md)
+- [Ledger Service](docs/ledger-service.md)
 - [KYC Service](docs/kyc-service.md)
 
 ## Building & Running
@@ -161,6 +163,37 @@ mvn spring-boot:run
 **Database**: `account_service` (PostgreSQL)
 
 **Tests**: Comprehensive unit and integration tests included
+
+---
+
+### Ledger Service (Port 8085)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- Double-entry journals with balanced debits/credits
+- Ledger accounts with types (ASSET, LIABILITY, EQUITY, INCOME, EXPENSE)
+- Automatic balance updates per account based on entry type and account type
+- Journal reversal workflow that creates offsetting entries and marks originals as REVERSED
+- Paging APIs for accounts and account entries
+
+**Quickstart**:
+```bash
+cd services/ledger-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/ledger/accounts` - Create ledger account
+- `GET /api/ledger/accounts/{id}` - Get ledger account
+- `POST /api/ledger/journals` - Post balanced journal
+- `POST /api/ledger/journals/{id}/reverse` - Reverse journal
+- `GET /api/ledger/accounts/{accountId}/entries` - List account entries
+
+**Swagger UI**: `http://localhost:8085/swagger-ui.html`
+
+**Database**: `ledger_service` (PostgreSQL)
+
+**Tests**: Covers journal posting, reversals, validations, and controllers
 
 ---
 
@@ -503,6 +536,7 @@ The implemented services integrate via Kafka events:
 | Service | Port | Status | Database |
 |---------|------|--------|----------|
 | Account Service | 8081 | ✅ Implemented | `account_service` |
+| Ledger Service | 8085 | ✅ Implemented | `ledger_service` |
 | Identity Service | 8082 | ✅ Implemented | `identity_service` |
 | Compliance Service | 8083 | ✅ Implemented | `compliance_service` |
 | KYC Service | 8084 | ✅ Implemented | `kyc_service` |
