@@ -27,8 +27,54 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+  level:
+    com.banking.compliance: INFO
+    org.springframework.web: INFO
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    org.springframework.kafka: INFO
+  config: classpath:logback-spring.xml
+
+compliance:
+  security:
+    enabled: false  # When true, JWT Bearer auth is required for APIs
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+  level:
+    com.banking.compliance: INFO
+    org.springframework.web: INFO
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    org.springframework.kafka: INFO
+  config: classpath:logback-spring.xml
+
+compliance:
+  security:
+    enabled: false  # When true, JWT Bearer auth is required for APIs
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
