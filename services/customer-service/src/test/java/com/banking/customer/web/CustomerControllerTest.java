@@ -28,16 +28,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.banking.customer.config.PiiMaskingFilter;
 import com.banking.customer.config.RequestLoggingFilter;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(CustomerController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
+@TestPropertySource(properties = {
+        "customer.security.enabled=false",
+        "spring.flyway.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 class CustomerControllerTest {
 
     @Autowired
