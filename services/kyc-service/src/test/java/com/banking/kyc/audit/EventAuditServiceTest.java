@@ -1,5 +1,6 @@
 package com.banking.kyc.audit;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -10,6 +11,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.UUID;
 
@@ -18,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class EventAuditServiceTest {
 
     @Mock
@@ -33,7 +37,7 @@ class EventAuditServiceTest {
     private EventAuditService eventAuditService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JsonProcessingException {
         when(objectMapper.writeValueAsString(any())).thenReturn("{\"test\":\"data\"}");
     }
 

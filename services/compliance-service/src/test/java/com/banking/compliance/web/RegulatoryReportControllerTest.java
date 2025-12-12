@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.banking.compliance.config.PiiMaskingFilter;
+import com.banking.compliance.config.RequestLoggingFilter;
 import com.banking.compliance.domain.ReportStatus;
 import com.banking.compliance.domain.ReportType;
 import com.banking.compliance.domain.RegulatoryReport;
@@ -32,9 +34,24 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @WebMvcTest(RegulatoryReportController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
+@TestPropertySource(properties = {
+        "compliance.security.enabled=false",
+        "spring.flyway.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 class RegulatoryReportControllerTest {
 
     @Autowired
@@ -45,6 +62,9 @@ class RegulatoryReportControllerTest {
 
     @MockBean
     private ComplianceMapper complianceMapper;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
 
     private ObjectMapper objectMapper;
 

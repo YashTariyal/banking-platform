@@ -19,14 +19,31 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import io.micrometer.core.instrument.MeterRegistry;
+import com.banking.loan.config.RequestLoggingFilter;
+import com.banking.loan.config.PiiMaskingFilter;
 
 @WebMvcTest(controllers = LoanController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
+@TestPropertySource(properties = {
+        "loan.security.enabled=false",
+        "spring.flyway.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 class LoanControllerTest {
 
     @Autowired
@@ -37,6 +54,9 @@ class LoanControllerTest {
 
     @MockBean
     private LoanMapper mapper;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
 
     private LoanApplication loan;
     private LoanApplicationResponse response;

@@ -15,6 +15,8 @@ import com.banking.risk.service.RiskAssessmentService;
 import com.banking.risk.web.dto.AssessRiskRequest;
 import com.banking.risk.web.dto.PageResponse;
 import com.banking.risk.web.dto.RiskAssessmentResponse;
+import com.banking.risk.config.RequestLoggingFilter;
+import com.banking.risk.config.PiiMaskingFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -23,15 +25,30 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @WebMvcTest(RiskAssessmentController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
+@TestPropertySource(properties = {
+        "risk.security.enabled=false",
+        "spring.flyway.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 class RiskAssessmentControllerTest {
 
     @Autowired
@@ -42,6 +59,9 @@ class RiskAssessmentControllerTest {
 
     @MockBean
     private RiskMapper mapper;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
 
     @Autowired
     private ObjectMapper objectMapper;

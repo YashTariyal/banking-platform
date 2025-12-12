@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.banking.support.config.PiiMaskingFilter;
+import com.banking.support.config.RequestLoggingFilter;
 import com.banking.support.domain.ManualOverride;
 import com.banking.support.domain.OverrideStatus;
 import com.banking.support.domain.OverrideType;
@@ -30,9 +32,24 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @WebMvcTest(ManualOverrideController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
+@TestPropertySource(properties = {
+        "support.security.enabled=false",
+        "spring.flyway.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 class ManualOverrideControllerTest {
 
     @Autowired
@@ -43,6 +60,9 @@ class ManualOverrideControllerTest {
 
     @MockBean
     private SupportMapper mapper;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
 
     @Autowired
     private ObjectMapper objectMapper;

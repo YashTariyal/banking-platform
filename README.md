@@ -26,6 +26,34 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 | Compliance | Regulatory reports, AML
 | Support | Back-office cases, manual overrides
 
+## Platform Overview (cross-cutting)
+- **Security/JWT**: All services are OAuth2 Resource Servers (Bearer JWT). Toggle per service via `<service>.security.enabled=false` for local/test. Dev HS256 secrets live in each `application.yml`; tests disable security and use H2.
+- **AOP & Logging**: Request/response logging + PII masking via `RequestLoggingFilter` and `PiiMaskingFilter` with MDC correlationId. Event monitoring aspects audit Kafka publish/consume paths to `event_audit_logs` tables (where present).
+- **Observability**: Micrometer metrics (HTTP/Kafka/custom counters) and tracing hooks (OTel/Zipkin-ready). Actuator health/metrics/prometheus exposed; sampling probability defaults to 1.0 for local/test.
+- **Data & Migrations**: Flyway migrations per service under `services/<service>/src/main/resources/db/migration`. Production uses Postgres; tests use in-memory H2 with Flyway disabled via `spring.flyway.enabled=false`.
+- **Kafka**: Standardized topics per service (see Kafka Topics section). Correlation IDs flow through logs and metrics.
+- **Testing**: MockMvc/WebMvcTest slices disable filters; `SimpleMeterRegistry` supplied where needed; H2 profiles and security disabled in tests.
+
+## Service Docs & API Links
+Use Swagger UI for full payloads and the docs for deep dives.
+
+| Service | Swagger (local) | Docs |
+| --- | --- | --- |
+| Account | http://localhost:8081/swagger-ui.html | `docs/account-service.md` |
+| Customer | http://localhost:8081/swagger-ui.html | `docs/customer-service.md` |
+| Identity | http://localhost:8082/swagger-ui.html | `docs/identity-service.md` |
+| Compliance | http://localhost:8083/swagger-ui.html | `docs/compliance-service.md` |
+| KYC | http://localhost:8084/swagger-ui.html | `docs/kyc-service.md` |
+| Card | http://localhost:8084/swagger-ui.html | `docs/card-service.md` (see below) |
+| Ledger | http://localhost:8085/swagger-ui.html | `docs/ledger-service.md` |
+| Loan | http://localhost:8086/swagger-ui.html | `docs/loan-service.md` |
+| Payment | http://localhost:8087/swagger-ui.html | `docs/payment-service.md` |
+| Risk | http://localhost:8088/swagger-ui.html | `docs/risk-service.md` |
+| Support | http://localhost:8089/swagger-ui.html | `docs/support-service.md` |
+| Transaction | http://localhost:8090/swagger-ui.html | `docs/transaction-service.md` |
+
+Schema quick reference: Flyway SQL lives under each service’s `src/main/resources/db/migration`.
+
 ## Implemented Services
 
 The following services are fully implemented with domain entities, repositories, services, REST APIs, Kafka integration, comprehensive tests, and documentation:

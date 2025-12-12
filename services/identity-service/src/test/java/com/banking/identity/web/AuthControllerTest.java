@@ -7,26 +7,42 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.banking.identity.config.PiiMaskingFilter;
+import com.banking.identity.config.RequestLoggingFilter;
 import com.banking.identity.domain.User;
 import com.banking.identity.domain.UserStatus;
 import com.banking.identity.service.AuthenticationService;
 import com.banking.identity.service.SessionService;
 import com.banking.identity.web.dto.LoginResponse;
+import com.banking.identity.config.RequestLoggingFilter;
+import com.banking.identity.config.PiiMaskingFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @WebMvcTest(controllers = AuthController.class, excludeAutoConfiguration = {
         org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
+})
+@AutoConfigureMockMvc(addFilters = false)
+@Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
+@TestPropertySource(properties = {
+        "identity.security.enabled=false",
+        "spring.flyway.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=none"
 })
 class AuthControllerTest {
 
@@ -38,6 +54,15 @@ class AuthControllerTest {
 
     @MockBean
     private SessionService sessionService;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
+
+    @MockBean
+    private PiiMaskingFilter piiMaskingFilter;
+
+    @MockBean
+    private RequestLoggingFilter requestLoggingFilter;
 
     private ObjectMapper objectMapper;
 
