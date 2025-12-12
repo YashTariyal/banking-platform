@@ -25,14 +25,19 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.banking.customer.config.PiiMaskingFilter;
+import com.banking.customer.config.RequestLoggingFilter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(CustomerController.class)
+@Import({RequestLoggingFilter.class, PiiMaskingFilter.class})
 class CustomerControllerTest {
 
     @Autowired
@@ -43,6 +48,9 @@ class CustomerControllerTest {
 
     @MockBean
     private CustomerMapper customerMapper;
+
+    @MockBean
+    private MeterRegistry meterRegistry;
 
     private ObjectMapper objectMapper;
 
