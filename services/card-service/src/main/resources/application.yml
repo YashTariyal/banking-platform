@@ -40,6 +40,9 @@ eureka:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 90
+    homePageUrl: http://localhost:${server.port}/swagger-ui.html
+    statusPageUrl: http://localhost:${server.port}/swagger-ui.html
+    healthCheckUrl: http://localhost:${server.port}/actuator/health
 
 management:
   endpoints:
