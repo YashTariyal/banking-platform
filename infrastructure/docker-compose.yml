@@ -93,6 +93,25 @@ services:
     networks:
       - banking-net
 
+  eureka-server:
+    build:
+      context: ../services/eureka-server
+      dockerfile: Dockerfile
+    container_name: banking-eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - banking-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 networks:
   banking-net:
     driver: bridge

@@ -11,22 +11,24 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 - Maven multi-module build
 
 ## Modules
-| Service | Responsibility |
-| --- | --- |
-| Identity | Auth, sessions, MFA
-| Customer | PII, contact data, preferences
-| KYC | Onboarding workflows, screening
-| Account | Account catalog, lifecycle, limits
-| Ledger | Double-entry postings, balances
-| Transaction | Payment orchestration & sagas
-| Payment | External rail integrations
-| Card | Card issuance, auth handling
-| Loan | Applications, schedules, repayments
-| Risk | Fraud/risk scoring, alerts
-| Compliance | Regulatory reports, AML
-| Support | Back-office cases, manual overrides
+| Service | Responsibility | Port |
+| --- | --- | --- |
+| Eureka Server | Service discovery & registry | 8761 |
+| Identity | Auth, sessions, MFA | 8082 |
+| Customer | PII, contact data, preferences | 8081 |
+| KYC | Onboarding workflows, screening | 8091 |
+| Account | Account catalog, lifecycle, limits | 8080 |
+| Ledger | Double-entry postings, balances | 8085 |
+| Transaction | Payment orchestration & sagas | 8090 |
+| Payment | External rail integrations | 8087 |
+| Card | Card issuance, auth handling | 8084 |
+| Loan | Applications, schedules, repayments | 8086 |
+| Risk | Fraud/risk scoring, alerts | 8088 |
+| Compliance | Regulatory reports, AML | 8083 |
+| Support | Back-office cases, manual overrides | 8089 |
 
 ## Platform Overview (cross-cutting)
+- **Service Discovery**: Eureka Server running on port 8761 provides service registry and discovery. All services auto-register on startup. Access dashboard at http://localhost:8761
 - **Security/JWT**: All services are OAuth2 Resource Servers (Bearer JWT). Toggle per service via `<service>.security.enabled=false` for local/test. Dev HS256 secrets live in each `application.yml`; tests disable security and use H2.
 - **AOP & Logging**: Request/response logging + PII masking via `RequestLoggingFilter` and `PiiMaskingFilter` with MDC correlationId. Event monitoring aspects audit Kafka publish/consume paths to `event_audit_logs` tables (where present).
 - **Observability**: Micrometer metrics (HTTP/Kafka/custom counters) and tracing hooks (OTel/Zipkin-ready). Actuator health/metrics/prometheus exposed; sampling probability defaults to 1.0 for local/test.
