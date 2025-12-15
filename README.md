@@ -25,7 +25,7 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 | Loan | Applications, schedules, repayments | 8086 |
 | Risk | Fraud/risk scoring, alerts | 8088 |
 | Compliance | Regulatory reports, AML | 8083 |
-| Support | Back-office cases, manual overrides | 8089 |
+| Support | Back-office cases, manual overrides | 8092 |
 
 ## Platform Overview (cross-cutting)
 - **Service Discovery**: Eureka Server running on port 8761 provides service registry and discovery. All services auto-register on startup. Access dashboard at http://localhost:8761
@@ -51,7 +51,7 @@ Use Swagger UI for full payloads and the docs for deep dives.
 | Loan | http://localhost:8086/swagger-ui.html | `docs/loan-service.md` |
 | Payment | http://localhost:8087/swagger-ui.html | `docs/payment-service.md` |
 | Risk | http://localhost:8088/swagger-ui.html | `docs/risk-service.md` |
-| Support | http://localhost:8089/swagger-ui.html | `docs/support-service.md` |
+| Support | http://localhost:8092/swagger-ui.html | `docs/support-service.md` |
 | Transaction | http://localhost:8090/swagger-ui.html | `docs/transaction-service.md` |
 
 Schema quick reference: Flyway SQL lives under each service’s `src/main/resources/db/migration`.
@@ -591,7 +591,7 @@ mvn spring-boot:run
 
 ---
 
-### Support Service (Port 8089)
+### Support Service (Port 8092)
 **Status**: ✅ Fully Implemented
 
 **Features**:
@@ -625,7 +625,7 @@ mvn spring-boot:run
 - `PUT /api/support/overrides/{id}/reject` - Reject override
 - `PUT /api/support/overrides/{id}/revoke` - Revoke override
 
-**Swagger UI**: `http://localhost:8089/swagger-ui.html`
+**Swagger UI**: `http://localhost:8092/swagger-ui.html`
 
 **Database**: `support_service` (PostgreSQL)
 
@@ -877,7 +877,7 @@ The implemented services integrate via Kafka events:
 | Loan Service | 8086 | ✅ Implemented | `loan_service` |
 | Payment Service | 8087 | ✅ Implemented | `payment_service` |
 | Risk Service | 8088 | ✅ Implemented | `risk_service` |
-| Support Service | 8089 | ✅ Implemented | `support_service` |
+| Support Service | 8092 | ✅ Implemented | `support_service` |
 | Transaction Service | 8090 | ✅ Implemented | `transaction_service` |
 | Card Service | 8084 | ✅ Implemented | `card_service` |
 

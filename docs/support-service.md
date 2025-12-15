@@ -381,7 +381,7 @@ The service publishes events to the `support-events` topic:
 
 ## Service Configuration
 
-**Port**: 8089
+**Port**: 8092
 
 **Database**: PostgreSQL (`support_service`)
 
