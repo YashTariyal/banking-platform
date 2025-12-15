@@ -1,5 +1,5 @@
 server:
-  port: 8089
+  port: 8081
 spring:
   application:
     name: customer-service
@@ -8,6 +8,8 @@ spring:
     username: customer_svc
     password: changeMe!
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 3
   jpa:
     hibernate:
       ddl-auto: none
