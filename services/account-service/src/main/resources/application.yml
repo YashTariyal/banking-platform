@@ -41,6 +41,10 @@ spring:
       properties:
         spring.json.add.type.headers: false
 account:
+  http:
+    client:
+      connect-timeout-ms: 3000
+      read-timeout-ms: 5000
   topics:
     account-created: accounts.account-created
     account-updated: accounts.account-updated

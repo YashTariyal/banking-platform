@@ -79,6 +79,10 @@ springdoc:
     tags-sorter: alpha
     try-it-out-enabled: true
 card:
+  http:
+    client:
+      connect-timeout-ms: 3000
+      read-timeout-ms: 5000
   security:
     enabled: true  # When true, JWT Bearer auth is required for APIs
     refresh-token:

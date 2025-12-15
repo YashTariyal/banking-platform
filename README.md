@@ -172,6 +172,101 @@ Key config (see `services/card-service/src/main/resources/application.yml`):
 - Dockerfiles for card/account live under each service directory; Helm charts under `deploy/charts/*` with probes and security toggles.
 - GitHub Actions workflow `.github/workflows/ci.yml` runs build/test, CycloneDX SBOM, OWASP dependency-check, Docker builds, and Helm lint.
 
+## Security configuration (JWT + mTLS)
+
+All business-domain services (account, customer, kyc, loan, risk, compliance, support, card) are designed to run as **OAuth2 Resource Servers** behind the Identity service. Each service exposes a `<service>.security.enabled` property to toggle enforcement, plus a startup validator that fails fast when security is misconfigured.
+
+### JWT configuration (per service)
+
+When `<service>.security.enabled=true`:
+
+- **You must configure at least one of**:
+  - `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` (preferred in prod)
+  - `spring.security.oauth2.resourceserver.jwt.issuer-uri`
+  - `spring.security.oauth2.resourceserver.jwt.secret-key` (symmetric HS256, dev only)
+- If none of these are set, the corresponding `SecurityStartupValidator` will throw on startup with a clear message (for example, `card.security.enabled=true but no JWT configuration found.`).
+
+For Identity service (token issuer):
+
+- Configure a strong 256‑bit secret:
+  - `identity.jwt.secret-key=<random-32+ char secret>`
+- Set token characteristics:
+  - `identity.jwt.access-token-validity-seconds` (default: 3600)
+  - `identity.jwt.refresh-token-validity-seconds` (default: 86400)
+  - `identity.jwt.issuer=identity-service` (or your external issuer name)
+
+### Local vs non-local profiles
+
+- **Local/dev**:
+  - It is acceptable to use `spring.security.oauth2.resourceserver.jwt.secret-key` with a known value and/or to disable security with `<service>.security.enabled=false` for fast iteration.
+  - Tests set `<service>.security.enabled=false` explicitly where needed to keep suites fast and deterministic.
+- **Non-local (staging/prod)**:
+  - Prefer `jwk-set-uri` or `issuer-uri` pointing at your centralized IdP or Identity service.
+  - Do **not** use the default secrets defined in `application.yml`; override via environment variables or a secrets manager.
+
+### mTLS between services
+
+For environments requiring mutual TLS on east‑west traffic:
+
+- **Server-side TLS** (per service):
+  - `server.ssl.enabled=true`
+  - `server.ssl.key-store=classpath:tls/service-keystore.p12`
+  - `server.ssl.key-store-password=<changeMe>`
+  - `server.ssl.key-store-type=PKCS12`
+  - `server.ssl.key-alias=<service-alias>`
+- **Client trust configuration** (for HTTP clients such as `RestTemplate` / WebClient):
+  - Configure a truststore with your internal CA:
+    - `javax.net.ssl.trustStore=/etc/ssl/truststore.p12`
+    - `javax.net.ssl.trustStorePassword=<changeMe>`
+  - Or configure an HTTP client bean that loads a custom `SSLContext` wired to Spring’s `RestTemplate` / WebClient.
+- **Certificate rotation**:
+  - Prefer short-lived leaf certificates signed by an internal CA and automate renewal via your platform (Kubernetes cert-manager, SPIRE, etc.).
+
+In Kubernetes, TLS keys and truststores should be mounted as Secrets and referenced from `application.yml` via environment variable placeholders (for example, `server.ssl.key-store=${SSL_KEYSTORE_PATH}`).
+
+## Observability baseline (logs, metrics, traces)
+
+The platform standardizes on **structured logging**, **Micrometer metrics**, and **OpenTelemetry-compatible tracing**:
+
+- **Logging**:
+  - JSON/structured logs via `logstash-logback-encoder` where enabled.
+  - Correlation IDs propagated through MDC (see `RequestLoggingFilter` and `PiiMaskingFilter` in services such as account, customer, compliance, risk).
+  - Console pattern includes `correlationId` to link API calls, Kafka events, and DB interactions.
+- **Metrics**:
+  - HTTP metrics via `http.server.requests`.
+  - Domain metrics (for example: `accounts.transactions.amount`, `accounts.balance`) configured in `application.yml` with histogram and percentile settings.
+  - Cache and Redis metrics are enabled where caching is used (for example: `account.cache.metrics.enabled=true`, `card.cache.metrics.enabled=true`).
+- **Tracing**:
+  - Micrometer Tracing with Zipkin reporter.
+  - Sampling probability is set to `1.0` by default in local/test; adjust downwards in production to control cardinality and cost.
+
+To expose operational endpoints consistently:
+
+```yaml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+```
+
+Services such as `card-service`, `account-service`, and `identity-service` already follow this pattern; when adding a new service, copy these `management` and logging sections and adjust only the application name and any domain-specific metrics.
+
 ## Implemented Services Overview
 
 ### Account Service (Port 8081)

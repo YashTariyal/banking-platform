@@ -47,6 +47,7 @@ identity:
   security:
     enabled: false  # When true, JWT Bearer auth is required for APIs
   jwt:
+    # Provide a 256-bit (>=32 char) random secret in non-local environments.
     secret-key: default-secret-key-change-in-production-min-256-bits-please-use-a-secure-random-key
     access-token-validity-seconds: 3600
     refresh-token-validity-seconds: 86400
