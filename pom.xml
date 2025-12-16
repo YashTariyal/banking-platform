@@ -23,6 +23,7 @@
         <module>services/risk-service</module>
         <module>services/compliance-service</module>
         <module>services/support-service</module>
+        <module>services/api-gateway</module>
     </modules>
 
     <properties>
