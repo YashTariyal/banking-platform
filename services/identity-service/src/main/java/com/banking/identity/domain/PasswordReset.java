@@ -30,6 +30,9 @@ public class PasswordReset {
     @Column(name = "used_at")
     private Instant usedAt;
 
+    @Column(name = "email", length = 255)
+    private String email;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -100,6 +103,14 @@ public class PasswordReset {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public boolean isExpired() {

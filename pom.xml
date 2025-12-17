@@ -26,6 +26,8 @@
         <module>services/api-gateway</module>
         <module>services/scheduler-service</module>
         <module>services/document-service</module>
+        <module>services/health-aggregator</module>
+        <module>services/notification-service</module>
     </modules>
 
     <properties>

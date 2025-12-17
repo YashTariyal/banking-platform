@@ -92,6 +92,18 @@ spring:
             - Path=/documents/**
           filters:
             - StripPrefix=1
+        - id: health-aggregator
+          uri: http://localhost:8095
+          predicates:
+            - Path=/health-status/**
+          filters:
+            - StripPrefix=1
+        - id: notification-service
+          uri: http://localhost:8096
+          predicates:
+            - Path=/notifications/**
+          filters:
+            - StripPrefix=1
 
 management:
   endpoints:

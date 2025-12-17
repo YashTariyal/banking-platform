@@ -52,6 +52,10 @@ identity:
     access-token-validity-seconds: 3600
     refresh-token-validity-seconds: 86400
     issuer: identity-service
+  password-reset:
+    token-validity-seconds: 3600  # 1 hour
+  email-verification:
+    token-validity-seconds: 86400  # 24 hours
 
 eureka:
   client:

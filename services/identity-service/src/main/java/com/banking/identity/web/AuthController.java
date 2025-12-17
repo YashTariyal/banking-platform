@@ -2,6 +2,8 @@ package com.banking.identity.web;
 
 import com.banking.identity.domain.User;
 import com.banking.identity.service.AuthenticationService;
+import com.banking.identity.service.EmailVerificationService;
+import com.banking.identity.service.RefreshTokenService;
 import com.banking.identity.service.SessionService;
 import com.banking.identity.web.dto.LoginRequest;
 import com.banking.identity.web.dto.LoginResponse;
@@ -33,10 +35,18 @@ public class AuthController {
 
     private final AuthenticationService authenticationService;
     private final SessionService sessionService;
+    private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthController(AuthenticationService authenticationService, SessionService sessionService) {
+    public AuthController(
+            AuthenticationService authenticationService,
+            SessionService sessionService,
+            RefreshTokenService refreshTokenService,
+            EmailVerificationService emailVerificationService) {
         this.authenticationService = authenticationService;
         this.sessionService = sessionService;
+        this.refreshTokenService = refreshTokenService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register")
@@ -51,6 +61,8 @@ public class AuthController {
     })
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = authenticationService.register(request);
+        // Send email verification
+        emailVerificationService.createVerificationToken(user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(toUserResponse(user));
     }
 
@@ -87,16 +99,18 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(
-            summary = "Refresh access token",
-            description = "Generates a new access token using a valid refresh token"
+            summary = "Refresh access token with token rotation",
+            description = "Generates new access and refresh tokens, invalidating the old refresh token (one-time use)"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid refresh token")
+            @ApiResponse(responseCode = "200", description = "Tokens refreshed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid refresh token"),
+            @ApiResponse(responseCode = "401", description = "Refresh token reuse detected - all sessions revoked")
     })
     public ResponseEntity<RefreshTokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        String newAccessToken = sessionService.refreshAccessToken(request.refreshToken());
-        return ResponseEntity.ok(new RefreshTokenResponse(newAccessToken, request.refreshToken()));
+        // Use refresh token rotation for enhanced security
+        RefreshTokenResponse response = refreshTokenService.rotateRefreshToken(request.refreshToken());
+        return ResponseEntity.ok(response);
     }
 
     private UserResponse toUserResponse(User user) {

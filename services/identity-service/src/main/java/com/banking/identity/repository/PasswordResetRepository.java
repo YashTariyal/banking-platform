@@ -20,5 +20,12 @@ public interface PasswordResetRepository extends JpaRepository<PasswordReset, UU
     @Modifying
     @Query("UPDATE PasswordReset pr SET pr.used = true, pr.usedAt = CURRENT_TIMESTAMP WHERE pr.userId = :userId AND pr.used = false")
     void invalidateAllByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("UPDATE PasswordReset pr SET pr.used = true WHERE pr.userId = :userId AND pr.used = false")
+    void invalidateExistingTokens(@Param("userId") UUID userId);
+
+    @Query("SELECT pr FROM PasswordReset pr WHERE pr.token = :token AND pr.used = false AND pr.expiresAt > CURRENT_TIMESTAMP")
+    Optional<PasswordReset> findValidToken(@Param("token") String token);
 }
 

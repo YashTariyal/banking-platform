@@ -1,0 +1,72 @@
+server:
+  port: 8095
+
+spring:
+  application:
+    name: health-aggregator
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+  level:
+    com.banking.health: INFO
+    org.springframework.web: INFO
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Services to monitor
+health:
+  services:
+    - name: identity-service
+      url: http://localhost:8082
+    - name: customer-service
+      url: http://localhost:8081
+    - name: account-service
+      url: http://localhost:8080
+    - name: transaction-service
+      url: http://localhost:8090
+    - name: payment-service
+      url: http://localhost:8087
+    - name: loan-service
+      url: http://localhost:8086
+    - name: card-service
+      url: http://localhost:8084
+    - name: ledger-service
+      url: http://localhost:8085
+    - name: kyc-service
+      url: http://localhost:8084
+    - name: compliance-service
+      url: http://localhost:8083
+    - name: risk-service
+      url: http://localhost:8088
+    - name: support-service
+      url: http://localhost:8092
+    - name: scheduler-service
+      url: http://localhost:8093
+    - name: document-service
+      url: http://localhost:8094
+    - name: api-gateway
+      url: http://localhost:8091
+  check-interval-seconds: 30
+  timeout-seconds: 5

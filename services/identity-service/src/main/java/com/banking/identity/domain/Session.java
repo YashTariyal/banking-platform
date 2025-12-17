@@ -49,6 +49,9 @@ public class Session {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "refreshed_at")
+    private Instant refreshedAt;
+
     @PrePersist
     void onCreate() {
         if (id == null) {
@@ -156,6 +159,14 @@ public class Session {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Instant getRefreshedAt() {
+        return refreshedAt;
+    }
+
+    public void setRefreshedAt(Instant refreshedAt) {
+        this.refreshedAt = refreshedAt;
     }
 
     public boolean isExpired() {

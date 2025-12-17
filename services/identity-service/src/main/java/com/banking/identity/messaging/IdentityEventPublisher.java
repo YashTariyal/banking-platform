@@ -38,6 +38,26 @@ public class IdentityEventPublisher {
                 user.getId().toString());
     }
 
+    public void publishPasswordResetRequested(User user, String token) {
+        publishEvent(IdentityEvent.passwordResetRequested(user.getId(), user.getEmail(), token),
+                user.getId().toString());
+    }
+
+    public void publishPasswordChanged(User user) {
+        publishEvent(IdentityEvent.passwordChanged(user.getId(), user.getUsername()),
+                user.getId().toString());
+    }
+
+    public void publishEmailVerificationRequested(User user, String token) {
+        publishEvent(IdentityEvent.emailVerificationRequested(user.getId(), user.getEmail(), token),
+                user.getId().toString());
+    }
+
+    public void publishEmailVerified(User user) {
+        publishEvent(IdentityEvent.emailVerified(user.getId(), user.getEmail()),
+                user.getId().toString());
+    }
+
     private void publishEvent(IdentityEvent event, String key) {
         try {
             kafkaTemplate.send(IDENTITY_EVENTS_TOPIC, key, event)

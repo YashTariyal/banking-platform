@@ -12,8 +12,11 @@ import com.banking.identity.config.RequestLoggingFilter;
 import com.banking.identity.domain.User;
 import com.banking.identity.domain.UserStatus;
 import com.banking.identity.service.AuthenticationService;
+import com.banking.identity.service.EmailVerificationService;
+import com.banking.identity.service.RefreshTokenService;
 import com.banking.identity.service.SessionService;
 import com.banking.identity.web.dto.LoginResponse;
+import com.banking.identity.web.dto.RefreshTokenResponse;
 import com.banking.identity.config.RequestLoggingFilter;
 import com.banking.identity.config.PiiMaskingFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,6 +57,12 @@ class AuthControllerTest {
 
     @MockBean
     private SessionService sessionService;
+
+    @MockBean
+    private RefreshTokenService refreshTokenService;
+
+    @MockBean
+    private EmailVerificationService emailVerificationService;
 
     @MockBean
     private MeterRegistry meterRegistry;
@@ -127,7 +136,8 @@ class AuthControllerTest {
         com.banking.identity.web.dto.RefreshTokenRequest request =
                 new com.banking.identity.web.dto.RefreshTokenRequest("refreshToken");
 
-        when(sessionService.refreshAccessToken("refreshToken")).thenReturn("newAccessToken");
+        RefreshTokenResponse response = new RefreshTokenResponse("newAccessToken", "newRefreshToken");
+        when(refreshTokenService.rotateRefreshToken("refreshToken")).thenReturn(response);
 
         // When/Then
         mockMvc.perform(post("/api/auth/refresh")
@@ -136,7 +146,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("newAccessToken"));
 
-        verify(sessionService).refreshAccessToken("refreshToken");
+        verify(refreshTokenService).rotateRefreshToken("refreshToken");
     }
 
     private User createUser() {
