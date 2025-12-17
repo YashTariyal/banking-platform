@@ -1,6 +1,6 @@
 # Banking Platform (Spring Boot + Kafka)
 
-This monorepo scaffolds twelve domain-driven banking microservices built with Java 21, Spring Boot 3, Kafka, Hibernate, and PostgreSQL/MySQL drivers. Each service runs independently but shares conventions for messaging, persistence, and observability.
+This monorepo contains seventeen domain-driven banking microservices built with Java 21, Spring Boot 3, Kafka, Hibernate, and PostgreSQL/MySQL drivers. Each service runs independently but shares conventions for messaging, persistence, and observability. The platform includes an API Gateway, service discovery, scheduled jobs, document management, notifications, and health aggregation.
 
 ## Tech Stack
 - Java 21, Spring Boot 3.3
@@ -13,19 +13,29 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 ## Modules
 | Service | Responsibility | Port |
 | --- | --- | --- |
+| **Infrastructure** | | |
 | Eureka Server | Service discovery & registry | 8761 |
-| Identity | Auth, sessions, MFA | 8082 |
+| API Gateway | Edge routing, request aggregation | 8091 |
+| **Core Banking** | | |
+| Identity | Auth, sessions, MFA, RBAC, API keys | 8082 |
 | Customer | PII, contact data, preferences | 8081 |
-| KYC | Onboarding workflows, screening | 8091 |
 | Account | Account catalog, lifecycle, limits | 8080 |
 | Ledger | Double-entry postings, balances | 8085 |
 | Transaction | Payment orchestration & sagas | 8090 |
 | Payment | External rail integrations | 8087 |
 | Card | Card issuance, auth handling | 8084 |
 | Loan | Applications, schedules, repayments | 8086 |
+| **Risk & Compliance** | | |
+| KYC | Onboarding workflows, screening | 8084 |
 | Risk | Fraud/risk scoring, alerts | 8088 |
 | Compliance | Regulatory reports, AML | 8083 |
+| **Support Services** | | |
 | Support | Back-office cases, manual overrides | 8092 |
+| Scheduler | Scheduled jobs (interest, statements, EOD) | 8093 |
+| Document | Document management, PDF generation | 8094 |
+| **Observability & Notifications** | | |
+| Health Aggregator | Service health monitoring, business metrics | 8095 |
+| Notification | Email, SMS, push notifications, alerts | 8096 |
 
 ## Platform Overview (cross-cutting)
 - **Service Discovery**: Eureka Server running on port 8761 provides service registry and discovery. All services auto-register on startup. Access dashboard at http://localhost:8761
@@ -37,22 +47,26 @@ This monorepo scaffolds twelve domain-driven banking microservices built with Ja
 - **Testing**: MockMvc/WebMvcTest slices disable filters; `SimpleMeterRegistry` supplied where needed; H2 profiles and security disabled in tests.
 
 ## Service Docs & API Links
-Use Swagger UI for full payloads and the docs for deep dives.
+Use Swagger UI for full payloads and the docs for deep dives. Access all services through the API Gateway at `http://localhost:8091`.
 
-| Service | Swagger (local) | Docs |
-| --- | --- | --- |
-| Account | http://localhost:8081/swagger-ui.html | `docs/account-service.md` |
-| Customer | http://localhost:8081/swagger-ui.html | `docs/customer-service.md` |
-| Identity | http://localhost:8082/swagger-ui.html | `docs/identity-service.md` |
-| Compliance | http://localhost:8083/swagger-ui.html | `docs/compliance-service.md` |
-| KYC | http://localhost:8084/swagger-ui.html | `docs/kyc-service.md` |
-| Card | http://localhost:8084/swagger-ui.html | `docs/card-service.md` (see below) |
-| Ledger | http://localhost:8085/swagger-ui.html | `docs/ledger-service.md` |
-| Loan | http://localhost:8086/swagger-ui.html | `docs/loan-service.md` |
-| Payment | http://localhost:8087/swagger-ui.html | `docs/payment-service.md` |
-| Risk | http://localhost:8088/swagger-ui.html | `docs/risk-service.md` |
-| Support | http://localhost:8092/swagger-ui.html | `docs/support-service.md` |
-| Transaction | http://localhost:8090/swagger-ui.html | `docs/transaction-service.md` |
+| Service | Swagger (local) | Gateway Path | Docs |
+| --- | --- | --- | --- |
+| Account | http://localhost:8080/swagger-ui.html | `/accounts/**` | `docs/account-service.md` |
+| Customer | http://localhost:8081/swagger-ui.html | `/customers/**` | `docs/customer-service.md` |
+| Identity | http://localhost:8082/swagger-ui.html | `/identity/**` | `docs/identity-service.md` |
+| Compliance | http://localhost:8083/swagger-ui.html | `/compliance/**` | `docs/compliance-service.md` |
+| KYC | http://localhost:8084/swagger-ui.html | `/kyc/**` | `docs/kyc-service.md` |
+| Card | http://localhost:8084/swagger-ui.html | `/cards/**` | `docs/card-service.md` |
+| Ledger | http://localhost:8085/swagger-ui.html | `/ledger/**` | `docs/ledger-service.md` |
+| Loan | http://localhost:8086/swagger-ui.html | `/loans/**` | `docs/loan-service.md` |
+| Payment | http://localhost:8087/swagger-ui.html | `/payments/**` | `docs/payment-service.md` |
+| Risk | http://localhost:8088/swagger-ui.html | `/risk/**` | `docs/risk-service.md` |
+| Transaction | http://localhost:8090/swagger-ui.html | `/transactions/**` | `docs/transaction-service.md` |
+| Support | http://localhost:8092/swagger-ui.html | `/support/**` | `docs/support-service.md` |
+| Scheduler | http://localhost:8093/swagger-ui.html | `/scheduler/**` | - |
+| Document | http://localhost:8094/swagger-ui.html | `/documents/**` | - |
+| Health Aggregator | http://localhost:8095/swagger-ui.html | `/health-status/**` | - |
+| Notification | http://localhost:8096/swagger-ui.html | `/notifications/**` | - |
 
 Schema quick reference: Flyway SQL lives under each service’s `src/main/resources/db/migration`.
 
@@ -63,7 +77,7 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Account Service** - Account catalog, lifecycle, transactions, goals, and bulk operations
 - ✅ **Compliance Service** - AML monitoring, suspicious activity detection, and regulatory reporting
 - ✅ **Customer Service** - Customer PII, contact information, and preferences management
-- ✅ **Identity Service** - User authentication, session management, and multi-factor authentication
+- ✅ **Identity Service** - User authentication, session management, MFA, RBAC, API keys, password reset, email verification
 - ✅ **KYC Service** - Onboarding workflows, document verification, and screening
 - ✅ **Ledger Service** - Double-entry journals, ledger accounts, reversals, and balances
 - ✅ **Loan Service** - Loan applications, approvals, schedules, and payments
@@ -71,6 +85,11 @@ The following services are fully implemented with domain entities, repositories,
 - ✅ **Risk Service** - Risk assessment, scoring, and alerting for transactions, accounts, customers, and payments
 - ✅ **Support Service** - Back-office case management and manual override capabilities
 - ✅ **Transaction Service** - Transaction orchestration and lifecycle management for banking operations
+- ✅ **API Gateway** - Edge routing with path-based routing to all microservices
+- ✅ **Scheduler Service** - Scheduled jobs for interest calculation, statement generation, EOD reconciliation
+- ✅ **Document Service** - Document upload/download, KYC document management, PDF statement generation
+- ✅ **Health Aggregator** - Aggregates health status from all services, custom business metrics
+- ✅ **Notification Service** - Multi-channel notifications (email, SMS, push), event-driven alerts
 
 Each implemented service includes:
 - Domain entities with JPA annotations
@@ -443,7 +462,12 @@ mvn spring-boot:run
 **Features**:
 - **User Authentication**: Registration, login/logout with JWT tokens
 - **Session Management**: Track active sessions with device info, token refresh
+- **Refresh Token Rotation**: One-time use refresh tokens with reuse detection (revokes all sessions on reuse)
 - **Multi-Factor Authentication**: TOTP and SMS support with backup codes
+- **Password Reset Flow**: Secure token-based password reset via email link
+- **Email Verification**: Automatic verification email on registration
+- **Role-Based Access Control (RBAC)**: Roles (CUSTOMER, EMPLOYEE, ADMIN) with granular permissions
+- **API Key Authentication**: Machine-to-machine authentication with scopes and rate limits
 - **Account Security**: Account locking after failed attempts, password hashing (BCrypt)
 - **JWT Token Management**: Access tokens (1 hour) and refresh tokens (24 hours)
 - **Kafka Integration**: Publishes user lifecycle events
@@ -455,23 +479,33 @@ mvn spring-boot:run
 ```
 
 **Key Endpoints**:
-- `POST /api/auth/register` - Register new user
+- `POST /api/auth/register` - Register new user (sends verification email)
 - `POST /api/auth/login` - Login and get tokens
-- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/refresh` - Refresh tokens (with rotation)
 - `POST /api/auth/logout` - Logout session
+- `POST /api/auth/password/forgot` - Request password reset
+- `POST /api/auth/password/reset` - Reset password with token
+- `GET /api/auth/email/verify` - Verify email address
+- `POST /api/auth/email/resend` - Resend verification email
 - `GET /api/mfa/{userId}` - Get MFA settings
 - `POST /api/mfa/{userId}/totp` - Enable TOTP MFA
 - `POST /api/mfa/{userId}/sms` - Enable SMS MFA
+- `GET /api/roles` - List all roles
+- `POST /api/roles/assign` - Assign role to user
+- `GET /api/roles/users/{userId}/permissions` - Get user permissions
+- `POST /api/apikeys` - Create API key
+- `DELETE /api/apikeys/{id}` - Revoke API key
+- `POST /api/apikeys/validate` - Validate API key
 
 **Swagger UI**: `http://localhost:8082/swagger-ui.html`
 
 **Database**: `identity_service` (PostgreSQL)
 
-**Kafka Topics Published**: `identity-events` (USER_REGISTERED, USER_LOGGED_IN, USER_LOGGED_OUT, USER_LOCKED)
+**Kafka Topics Published**: `identity-events` (USER_REGISTERED, USER_LOGGED_IN, USER_LOGGED_OUT, USER_LOCKED, PASSWORD_RESET_REQUESTED, PASSWORD_CHANGED, EMAIL_VERIFICATION_REQUESTED, EMAIL_VERIFIED)
 
-**Security**: BCrypt password hashing (strength 12), JWT with HMAC-SHA256
+**Security**: BCrypt password hashing (strength 12), JWT with HMAC-SHA256, refresh token rotation
 
-**Tests**: 21 tests covering authentication, session, and MFA services
+**Tests**: 30+ tests covering authentication, session, MFA, RBAC, and API key services
 
 ---
 
@@ -678,6 +712,188 @@ mvn spring-boot:run
 
 ---
 
+### API Gateway (Port 8091)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Path-Based Routing**: Routes requests to appropriate microservices
+- **Request Aggregation**: Single entry point for all APIs
+- **Load Balancing**: Eureka-aware service discovery
+- **Observability**: Integrated with Micrometer tracing
+
+**Quickstart**:
+```bash
+cd services/api-gateway
+mvn spring-boot:run
+```
+
+**Gateway Routes**:
+| Path | Backend Service |
+|------|-----------------|
+| `/identity/**` | Identity Service (8082) |
+| `/customers/**` | Customer Service (8081) |
+| `/accounts/**` | Account Service (8080) |
+| `/transactions/**` | Transaction Service (8090) |
+| `/payments/**` | Payment Service (8087) |
+| `/loans/**` | Loan Service (8086) |
+| `/cards/**` | Card Service (8084) |
+| `/kyc/**` | KYC Service (8084) |
+| `/compliance/**` | Compliance Service (8083) |
+| `/risk/**` | Risk Service (8088) |
+| `/ledger/**` | Ledger Service (8085) |
+| `/support/**` | Support Service (8092) |
+| `/scheduler/**` | Scheduler Service (8093) |
+| `/documents/**` | Document Service (8094) |
+| `/health-status/**` | Health Aggregator (8095) |
+| `/notifications/**` | Notification Service (8096) |
+
+---
+
+### Scheduler Service (Port 8093)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Interest Calculation Job**: Daily interest calculation (2 AM)
+- **Statement Generation Job**: Monthly statement generation (1st of each month, 3 AM)
+- **EOD Reconciliation Job**: Daily end-of-day reconciliation (11 PM)
+- **Manual Triggers**: API endpoints to manually trigger jobs
+- **Job History**: Track job executions with status, records processed, errors
+
+**Quickstart**:
+```bash
+cd services/scheduler-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `GET /api/scheduler/jobs` - List all scheduled jobs
+- `GET /api/scheduler/jobs/{id}` - Get job by ID
+- `POST /api/scheduler/jobs/interest-calculation/trigger` - Manually trigger interest calculation
+- `POST /api/scheduler/jobs/statement-generation/trigger` - Manually trigger statement generation
+- `POST /api/scheduler/jobs/eod-reconciliation/trigger` - Manually trigger EOD reconciliation
+- `POST /api/scheduler/jobs/{id}/cancel` - Cancel a pending/running job
+
+**Swagger UI**: `http://localhost:8093/swagger-ui.html`
+
+**Database**: `scheduler_service` (PostgreSQL)
+
+**Kafka Topics Published**: `scheduler-events`
+
+---
+
+### Document Service (Port 8094)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Document Upload/Download**: Secure document storage with checksums
+- **Document Types**: KYC documents, statements, contracts, tax documents
+- **Document Verification**: Workflow for document approval/rejection
+- **PDF Statement Generation**: Generate account statements with iText
+- **Document Categories**: KYC, STATEMENT, CONTRACT, TAX, CORRESPONDENCE
+
+**Quickstart**:
+```bash
+cd services/document-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/documents` - Upload document
+- `GET /api/documents/{id}` - Get document metadata
+- `GET /api/documents/{id}/download` - Download document
+- `GET /api/documents/customer/{customerId}` - Get customer documents
+- `PUT /api/documents/{id}/verify` - Verify document
+- `PUT /api/documents/{id}/reject` - Reject document
+- `POST /api/statements/generate` - Generate account statement PDF
+- `POST /api/statements/preview` - Preview statement PDF
+- `GET /api/statements/{id}/download` - Download generated statement
+
+**Swagger UI**: `http://localhost:8094/swagger-ui.html`
+
+**Database**: `document_service` (PostgreSQL)
+
+**Kafka Topics Published**: `document-events`
+
+---
+
+### Health Aggregator Service (Port 8095)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Service Health Monitoring**: Aggregates health status from all microservices
+- **Scheduled Health Checks**: Periodic health checks (configurable interval)
+- **Business Metrics**: Track transactions/min, approval rates, login success rates
+- **Prometheus Integration**: Exposes metrics for monitoring dashboards
+
+**Quickstart**:
+```bash
+cd services/health-aggregator
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `GET /api/health` - Get aggregated health status (UP, DOWN, DEGRADED)
+- `GET /api/health/services` - Get health status of all services
+- `GET /api/health/services/{serviceName}` - Get health of specific service
+- `GET /api/health/metrics` - Get business metrics summary
+- `POST /api/health/metrics/transaction` - Record transaction metric
+- `POST /api/health/metrics/login` - Record login metric
+- `POST /api/health/metrics/loan` - Record loan application metric
+
+**Swagger UI**: `http://localhost:8095/swagger-ui.html`
+
+**Prometheus Metrics**:
+- `service.health` - Health status per service (1=UP, 0=DOWN)
+- `service.response.time` - Response time per service
+- `banking.transactions.total` - Total transactions
+- `banking.transactions.approved` - Approved transactions
+- `banking.loans.applications.total` - Total loan applications
+- `banking.auth.login.attempts` - Login attempts
+
+---
+
+### Notification Service (Port 8096)
+**Status**: ✅ Fully Implemented
+
+**Features**:
+- **Multi-Channel Notifications**: Email, SMS, Push, In-App
+- **Event-Driven Alerts**: Automatic notifications from Kafka events
+- **Alert Types**: Low balance, suspicious activity, payment received, password reset
+- **Notification Preferences**: Per-customer channel preferences
+- **Template Support**: Thymeleaf templates for HTML emails
+- **Retry Mechanism**: Automatic retry for failed notifications
+
+**Event-Driven Alerts**:
+- Low Balance Alert: When balance drops below $100
+- Suspicious Activity: When transaction exceeds $10,000
+- Payment Received: When payment is completed
+- Password Reset: When password reset is requested
+- Email Verification: When user registers
+
+**Quickstart**:
+```bash
+cd services/notification-service
+mvn spring-boot:run
+```
+
+**Key Endpoints**:
+- `POST /api/notifications` - Send notification
+- `GET /api/notifications/customer/{customerId}` - Get customer notifications
+- `GET /api/notifications/customer/{customerId}/unread` - Get unread notifications
+- `GET /api/notifications/customer/{customerId}/unread/count` - Get unread count
+- `PUT /api/notifications/{id}/read` - Mark notification as read
+- `PUT /api/notifications/customer/{customerId}/read-all` - Mark all as read
+- `GET /api/notifications/preferences/{customerId}` - Get notification preferences
+- `PUT /api/notifications/preferences/{customerId}` - Update preferences
+
+**Swagger UI**: `http://localhost:8096/swagger-ui.html`
+
+**Database**: `notification_service` (PostgreSQL)
+
+**Kafka Topics Consumed**: `identity-events`, `transaction-events`, `account-events`
+
+---
+
 ## Account Service quickstart (local)
 ```bash
 cd services/account-service
@@ -868,18 +1084,28 @@ The implemented services integrate via Kafka events:
 
 | Service | Port | Status | Database |
 |---------|------|--------|----------|
-| Account Service | 8081 | ✅ Implemented | `account_service` |
-| Ledger Service | 8085 | ✅ Implemented | `ledger_service` |
+| **Infrastructure** | | | |
+| Eureka Server | 8761 | ✅ Implemented | - |
+| API Gateway | 8091 | ✅ Implemented | - |
+| **Core Banking** | | | |
+| Account Service | 8080 | ✅ Implemented | `account_service` |
+| Customer Service | 8081 | ✅ Implemented | `customer_service` |
 | Identity Service | 8082 | ✅ Implemented | `identity_service` |
 | Compliance Service | 8083 | ✅ Implemented | `compliance_service` |
+| Card Service | 8084 | ✅ Implemented | `card_service` |
 | KYC Service | 8084 | ✅ Implemented | `kyc_service` |
-| Customer Service | 8081 | ✅ Implemented | `customer_service` |
+| Ledger Service | 8085 | ✅ Implemented | `ledger_service` |
 | Loan Service | 8086 | ✅ Implemented | `loan_service` |
 | Payment Service | 8087 | ✅ Implemented | `payment_service` |
 | Risk Service | 8088 | ✅ Implemented | `risk_service` |
-| Support Service | 8092 | ✅ Implemented | `support_service` |
 | Transaction Service | 8090 | ✅ Implemented | `transaction_service` |
-| Card Service | 8084 | ✅ Implemented | `card_service` |
+| Support Service | 8092 | ✅ Implemented | `support_service` |
+| **Support Services** | | | |
+| Scheduler Service | 8093 | ✅ Implemented | `scheduler_service` |
+| Document Service | 8094 | ✅ Implemented | `document_service` |
+| **Observability** | | | |
+| Health Aggregator | 8095 | ✅ Implemented | - |
+| Notification Service | 8096 | ✅ Implemented | `notification_service` |
 
 ## Kafka Topics Used
 
@@ -896,12 +1122,16 @@ The implemented services integrate via Kafka events:
 - `support-events` (Support Service)
 - `transaction-events` (Transaction Service)
 - `card-events` (Card Service)
+- `scheduler-events` (Scheduler Service)
+- `document-events` (Document Service)
 
 ### Topics Consumed
 - `customer-events` → KYC Service (creates onboarding cases)
-- `transaction-events` → Compliance Service (AML monitoring)
+- `transaction-events` → Compliance Service (AML monitoring), Notification Service (alerts)
 - `payment-events` → Compliance Service (AML monitoring)
 - `card-events` → Compliance Service (AML monitoring)
+- `identity-events` → Notification Service (password reset, email verification)
+- `account-events` → Notification Service (low balance alerts)
 
 ## Testing
 
@@ -924,13 +1154,29 @@ Run all tests:
 mvn test
 ```
 
+## Running All Services
+
+Use the provided script to start all services at once:
+
+```bash
+./run-all-services.sh
+```
+
+This starts all 17 microservices in the background with logs in `logs/`. Press Ctrl+C to stop all services.
+
+Or run individual services:
+```bash
+cd services/<service-name>
+mvn spring-boot:run
+```
+
 ## Next Steps
 1. Define shared domain contracts (Avro/JSON schemas) and add them to each service.
 2. Introduce common starter libraries (e.g., `commons-kafka`, `commons-security`).
 3. Implement CI pipelines to build/test all services.
 4. Add cache/data profile tuning, SAST/SBOM, and fraud/analytics streaming enhancements.
-5. Implement remaining services: Ledger, Transaction, Payment, Loan, Risk, Support
-6. Add service-to-service communication patterns (synchronous HTTP, async messaging)
-7. Implement distributed tracing across services
-8. Add API gateway for unified API access
+5. Add centralized logging (ELK or Loki stack)
+6. Set up distributed tracing dashboard (Jaeger/Zipkin UI)
+7. Implement rate limiting in API Gateway
+8. Add Redis caching for session management
 

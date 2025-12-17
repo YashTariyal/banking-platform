@@ -27,6 +27,11 @@ services=(
   "services/risk-service"
   "services/compliance-service"
   "services/support-service"
+  "services/api-gateway"
+  "services/scheduler-service"
+  "services/document-service"
+  "services/health-aggregator"
+  "services/notification-service"
 )
 
 declare -a pids=()
