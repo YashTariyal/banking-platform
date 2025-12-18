@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="627" viewBox="0 0 1200 627">
+  <defs>
+    <style>
+      .bg { fill: #0B1220; }
+      .card { fill: #0F1B33; stroke: #233458; stroke-width: 2; }
+      .chip { fill: #132447; stroke: #2B4272; stroke-width: 2; }
+      .title { font: 800 44px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #E7EEFF; letter-spacing: 0.2px; }
+      .subtitle { font: 500 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #AFC2F3; }
+      .label { font: 800 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #DCE7FF; }
+      .small { font: 600 15px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #CFE0FF; }
+      .tiny { font: 500 13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #AFC2F3; }
+      .kicker { font: 800 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; fill: #8FB1FF; letter-spacing: 1px; }
+      .accent { fill: #4F7CFF; opacity: 0.16; }
+      .glow { filter: drop-shadow(0 6px 18px rgba(79, 124, 255, 0.22)); }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="627"/>
+  <circle class="accent" cx="1040" cy="100" r="140"/>
+  <circle class="accent" cx="160" cy="580" r="170"/>
+
+  <text class="kicker" x="70" y="78">PROJECT SNAPSHOT</text>
+  <text class="title" x="70" y="135">Banking Platform</text>
+  <text class="subtitle" x="70" y="170">17 microservices • Domain-driven design • Event-driven workflows</text>
+
+  <!-- Left big card -->
+  <g class="glow">
+    <rect class="card" x="70" y="215" rx="18" ry="18" width="520" height="340"/>
+    <text class="label" x="100" y="255">Core stack</text>
+
+    <rect class="chip" x="100" y="280" rx="14" ry="14" width="220" height="56"/>
+    <text class="small" x="120" y="314">Java 21</text>
+    <text class="tiny" x="120" y="334">Spring Boot 3</text>
+
+    <rect class="chip" x="340" y="280" rx="14" ry="14" width="220" height="56"/>
+    <text class="small" x="360" y="314">Kafka</text>
+    <text class="tiny" x="360" y="334">events • sagas • pub/sub</text>
+
+    <rect class="chip" x="100" y="350" rx="14" ry="14" width="220" height="56"/>
+    <text class="small" x="120" y="384">PostgreSQL</text>
+    <text class="tiny" x="120" y="404">per-service DB</text>
+
+    <rect class="chip" x="340" y="350" rx="14" ry="14" width="220" height="56"/>
+    <text class="small" x="360" y="384">Flyway</text>
+    <text class="tiny" x="360" y="404">migrations</text>
+
+    <rect class="chip" x="100" y="420" rx="14" ry="14" width="220" height="56"/>
+    <text class="small" x="120" y="454">Security</text>
+    <text class="tiny" x="120" y="474">JWT • RBAC • MFA • (optional mTLS)</text>
+
+    <rect class="chip" x="340" y="420" rx="14" ry="14" width="220" height="56"/>
+    <text class="small" x="360" y="454">Observability</text>
+    <text class="tiny" x="360" y="474">Actuator • Micrometer • tracing-ready</text>
+
+    <text class="tiny" x="100" y="520">Build: Maven multi-module • Tests: unit + integration • Docs: Swagger + runbooks</text>
+  </g>
+
+  <!-- Right big card -->
+  <g class="glow">
+    <rect class="card" x="630" y="215" rx="18" ry="18" width="500" height="340"/>
+    <text class="label" x="660" y="255">Domains covered</text>
+
+    <rect class="chip" x="660" y="280" rx="14" ry="14" width="220" height="52"/>
+    <text class="small" x="680" y="312">Identity</text>
+    <text class="tiny" x="680" y="330">auth • sessions • API keys</text>
+
+    <rect class="chip" x="900" y="280" rx="14" ry="14" width="200" height="52"/>
+    <text class="small" x="920" y="312">Core banking</text>
+    <text class="tiny" x="920" y="330">customer • account • ledger</text>
+
+    <rect class="chip" x="660" y="342" rx="14" ry="14" width="220" height="52"/>
+    <text class="small" x="680" y="374">Money movement</text>
+    <text class="tiny" x="680" y="392">transactions • payments • cards</text>
+
+    <rect class="chip" x="900" y="342" rx="14" ry="14" width="200" height="52"/>
+    <text class="small" x="920" y="374">Credit</text>
+    <text class="tiny" x="920" y="392">loans • schedules • repayments</text>
+
+    <rect class="chip" x="660" y="404" rx="14" ry="14" width="220" height="52"/>
+    <text class="small" x="680" y="436">Risk & Compliance</text>
+    <text class="tiny" x="680" y="454">KYC • fraud • AML monitoring</text>
+
+    <rect class="chip" x="900" y="404" rx="14" ry="14" width="200" height="52"/>
+    <text class="small" x="920" y="436">Ops & Support</text>
+    <text class="tiny" x="920" y="454">cases • scheduler • health • notifications</text>
+
+    <text class="tiny" x="660" y="520">Single entry point via API Gateway • services discoverable via Eureka • events via Kafka topics</text>
+  </g>
+
+  <text class="tiny" x="70" y="610">Export to PNG (1200×627) for LinkedIn upload.</text>
+</svg>
+
